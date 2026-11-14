@@ -1,0 +1,40 @@
+.TH RUN 1 "2026" "Cyberus Linux Quest" "Mission 02 Manual"
+.SH NAME
+run \- Cyberus Mission 02 Home Sweet Home challenge binary
+.SH SYNOPSIS
+.B /challenge/run
+.I /home/student/<output-file>
+.br
+.B /challenge/run
+.B \-\-help
+.SH DESCRIPTION
+.B /challenge/run
+verifies that you can pass an absolute file path inside your home directory
+.RB ( /home/student )
+and writes the Stage A verification record and your secret Stage B note phrase into that file.
+.PP
+Note: Bash builtin commands such as
+.B cd
+and
+.B pwd
+use
+.B help cd
+whereas external binaries like
+.B run
+use
+.B man run
+or
+.BR "/challenge/run --help" .
+.SH EXAMPLES
+Since the shell expands
+.B ~
+to
+.BR /home/student ,
+you can run:
+.PP
+.nf
+.RS
+/challenge/run ~/stage_a.txt
+cat ~/stage_a.txt
+.RE
+.fi

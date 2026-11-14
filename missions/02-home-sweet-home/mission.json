@@ -1,0 +1,17 @@
+{
+  "id": "02",
+  "slug": "home-sweet-home",
+  "part": 1,
+  "title": "Home Sweet Home",
+  "kind": "state",
+  "bonus": false,
+  "bug_hunting": false,
+  "story": "In Linux, Bash builtins (like `cd` or `pwd`) are documented with `help <builtin>`, while external programs provide manual pages (`man <program>`) or a `--help` flag. Read the manual for `/challenge/run` to unlock Stage A, then take structured notes in Stage B.",
+  "objective": "1. Read the documentation for `/challenge/run` using `man run` or `/challenge/run --help`.\n2. Stage A: Run `/challenge/run` with an absolute path inside `/home/student` (hint: `~/stage_a.txt` expands to `/home/student/stage_a.txt`).\n3. Stage B: Read the file `/challenge/run` created using `cat`, create the directory `~/notes`, and write the secret phrase (`{MISSION02_PHRASE}`) into `~/notes/plan.txt` using `nano`.\n4. Run `quest check` to reveal your `CYBERUS{...}` flag, then submit it.",
+  "hints": [
+    "Try `man run` or `/challenge/run --help` to see what arguments `/challenge/run` expects.",
+    "`~` expands to `/home/student` automatically in Bash! Run `/challenge/run ~/stage_a.txt` and then `cat ~/stage_a.txt`.",
+    "Run `mkdir -p ~/notes`, then `nano ~/notes/plan.txt`, type the exact `CYBERUS-NOTE-...` phrase shown in `~/stage_a.txt`, save (Ctrl+O, Enter, Ctrl+X), and run `quest check`."
+  ],
+  "commands_taught": ["help", "man", "mkdir", "touch", "cat", "nano"]
+}

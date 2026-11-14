@@ -1,0 +1,17 @@
+{
+  "id": "01",
+  "slug": "position-thyself",
+  "part": 1,
+  "title": "Position Thyself",
+  "kind": "program",
+  "bonus": false,
+  "bug_hunting": false,
+  "story": "There is a challenge program at `/challenge/run` that hands out your first real flag, but it is picky about two things: where you are standing in the filesystem (`pwd`), and how you invoke the program (its absolute path).",
+  "objective": "1. Change your current directory (`cd`) to `{MISSION01_DIR}`.\n2. Run `/challenge/run` using its full absolute path.\n3. Submit the `CYBERUS{...}` flag it prints with `quest submit`.",
+  "hints": [
+    "Read the error message from `/challenge/run` carefully — it tells you which directory you must stand in.",
+    "Use `cd {MISSION01_DIR}` to move into the required directory, and `pwd` to confirm your location.",
+    "An absolute path starts with `/`. Once inside `{MISSION01_DIR}`, run `/challenge/run`."
+  ],
+  "commands_taught": ["pwd", "cd", "ls"]
+}

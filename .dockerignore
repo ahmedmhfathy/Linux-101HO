@@ -1,0 +1,14 @@
+.git
+.gitignore
+.gitattributes
+__pycache__
+*.pyc
+*.tar
+*.tar.gz
+dist
+README_STUDENTS.md
+setup-docker.sh
+start.sh
+reset.sh
+build-release.sh
+docker-compose.yml

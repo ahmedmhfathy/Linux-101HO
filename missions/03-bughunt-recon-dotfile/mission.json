@@ -1,0 +1,17 @@
+{
+  "id": "03",
+  "slug": "bughunt-recon-dotfile",
+  "part": 1,
+  "title": "Bug Hunt: Recon & Dotfile Leak",
+  "kind": "state",
+  "bonus": false,
+  "bug_hunting": true,
+  "story": "[BUG HUNTING MISSION - PART 1]\nDuring web reconnaissance, bug hunters inspect exported web roots and captured HTTP responses for accidental developer leaks: hidden dotfiles (like `.env.bak`), sensitive tokens left inside HTML comments (`<!-- ... -->`), and debug flags left enabled in configuration files.",
+  "objective": "Using ONLY Part 1 commands (`cd`, `ls -a`, `tree`, `cat`, `head`, `tail`, `less`, `mkdir`, `nano`):\n1. Explore `~/webapp_recon/` with `tree -a` or `ls -a` to find a hidden `.env.bak` file and read its `INTERNAL_ENDPOINT=...` line with `cat`.\n2. Open `~/webapp_recon/logs/http_response.txt` (~600 lines) with `less` (use `/STAGING_TOKEN` to search) to find the leaked `STAGING_TOKEN=...` inside an HTML comment.\n3. Edit `~/webapp_recon/config.ini` with `nano` and change `DEBUG=true` to `DEBUG=false`.\n4. Create `~/bounty_report/finding.txt` containing both the leaked `INTERNAL_ENDPOINT=...` value and `STAGING_TOKEN=...` value, then run `quest check`.",
+  "hints": [
+    "Run `tree -a ~/webapp_recon` or check subdirectories with `ls -la` to spot the hidden `.env.bak` file.",
+    "Run `less ~/webapp_recon/logs/http_response.txt`, type `/STAGING_TOKEN`, and press Enter to jump to the HTML comment.",
+    "Edit `~/webapp_recon/config.ini` with `nano` so it says `DEBUG=false`, create `~/bounty_report/finding.txt` with `mkdir -p ~/bounty_report` and `nano`, paste both `INTERNAL_ENDPOINT=...` and `STAGING_TOKEN=...`, and run `quest check`."
+  ],
+  "commands_taught": ["cd", "ls", "tree", "cat", "head", "tail", "less", "mkdir", "nano"]
+}

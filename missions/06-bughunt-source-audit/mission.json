@@ -1,0 +1,17 @@
+{
+  "id": "06",
+  "slug": "bughunt-source-audit",
+  "part": 2,
+  "title": "Bug Hunt: Source Audit & Webshell Triage",
+  "kind": "state",
+  "bonus": false,
+  "bug_hunting": true,
+  "story": "[BUG HUNTING MISSION - PART 2]\nYou are auditing a compromised web application source tree (`~/target_app/`). Real-world source code audits and bug triage require hunting for hardcoded API keys (`grep -r`), tracking down hidden webshells and exposed database backups (`find`), quarantining or removing dangerous files (`mv`, `rm`), ranking vulnerabilities by severity (`sort -n`), fixing world-readable private keys (`chmod`), and running privileged verification (`sudo`).",
+  "objective": "Using ONLY Part 1 & Part 2 commands (`find`, `grep -r`, `sort -n`, `cp`, `mv`, `rm`, `mkdir`, `nano`, `ls -l`, `chmod`, `sudo`):\n1. Search `~/target_app/` with `grep -r` for `CYBERUS_SECRET_KEY=` and record the key.\n2. Use `find ~/target_app` to find the hidden webshell (`*.shell.php`) and delete it with `rm`.\n3. Create `~/quarantine` with `mkdir`, find the exposed database backup (`*.sql.bak`) inside `~/target_app/`, and move (`mv`) it into `~/quarantine/`.\n4. Sort `~/target_app/vulns.txt` with `sort -n` to find the `VULN-...` ID with the highest score.\n5. Change `~/target_app/config/deploy_key` permissions to `600` (`chmod 600`).\n6. Write both the `CYBERUS_SECRET_KEY=...` value and the top `VULN-...` ID into `~/quarantine/triage_report.txt`, then run `sudo /usr/local/bin/vuln-verify` (check `sudo -l`!) or `quest check`.",
+  "hints": [
+    "Run `grep -rn \"CYBERUS_SECRET_KEY=\" ~/target_app` to find the leaked key, and `find ~/target_app -name \"*.shell.php\"` / `find ~/target_app -name \"*.sql.bak\"` to find the webshell and backup.",
+    "Delete the `.shell.php` file with `rm`, move the `.sql.bak` file into `~/quarantine/` with `mv`, and run `chmod 600 ~/target_app/config/deploy_key`.",
+    "Run `sort -n ~/target_app/vulns.txt` to see the highest score at the bottom, write both the secret key and top `VULN-...` ID into `~/quarantine/triage_report.txt`, then run `quest check` (or `sudo /usr/local/bin/vuln-verify`)."
+  ],
+  "commands_taught": ["find", "grep", "sort", "cp", "mv", "rm", "chmod", "sudo"]
+}

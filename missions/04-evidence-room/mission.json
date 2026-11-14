@@ -1,0 +1,17 @@
+{
+  "id": "04",
+  "slug": "evidence-room",
+  "part": 2,
+  "title": "The Evidence Room",
+  "kind": "state",
+  "bonus": false,
+  "bug_hunting": false,
+  "story": "A messy archive (`~/archive/`) holds ~300 decoy files across nested folders, a decoy trap directory, a scoreboard (`scores.txt`), and a single genuine `.evd` evidence file containing `EVIDENCE_MARKER_CYBERUS`.",
+  "objective": "1. Find the one `.evd` file inside `~/archive/` that contains the text `EVIDENCE_MARKER_CYBERUS` (using `find` and `grep -r`).\n2. Create `~/evidence` and copy (`cp`) or move (`mv`) that file to `~/evidence/case.txt`.\n3. Delete the directory `~/archive/decoy_trap` using `rm -r`.\n4. Sort `~/archive/scores.txt` numerically (`sort -n`) to find the researcher handle with the highest score, and write that handle into `~/evidence/top.txt`.\n5. Run `quest check` to claim your `CYBERUS{...}` flag.",
+  "hints": [
+    "`find ~/archive -name \"*.evd\"` locates `.evd` files, and `grep -rn \"EVIDENCE_MARKER_CYBERUS\" ~/archive` searches file contents.",
+    "Use `mkdir -p ~/evidence`, then `cp <path> ~/evidence/case.txt`, and remove the trap folder with `rm -r ~/archive/decoy_trap`.",
+    "Run `sort -n ~/archive/scores.txt` — the highest score is on the last line! Write that researcher's name into `~/evidence/top.txt` and run `quest check`."
+  ],
+  "commands_taught": ["find", "grep", "sort", "cp", "mv", "rm"]
+}

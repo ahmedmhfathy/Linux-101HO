@@ -1,0 +1,24 @@
+services:
+  lab:
+    image: linux-quest:1.0
+    build:
+      context: .
+      target: runtime
+    container_name: cyberus-linux-quest
+    hostname: lab
+    pull_policy: never
+    stdin_open: true
+    tty: true
+    network_mode: "none"
+    pids_limit: 256
+    mem_limit: 512m
+    cpus: 1.0
+    volumes:
+      - cyberus-quest-v1-home:/home/student
+      - cyberus-quest-v1-state:/var/lib/quest
+
+volumes:
+  cyberus-quest-v1-home:
+    name: cyberus-quest-v1-home
+  cyberus-quest-v1-state:
+    name: cyberus-quest-v1-state

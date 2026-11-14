@@ -1,0 +1,17 @@
+{
+  "id": "07",
+  "slug": "redirect-trilogy",
+  "part": 3,
+  "title": "Redirect Trilogy",
+  "kind": "state",
+  "bonus": false,
+  "bug_hunting": false,
+  "story": "Every Linux process has three standard streams: `stdin` (0), `stdout` (1), and `stderr` (2). Noisy programs often mix status messages and decoys across `stdout` and `stderr`. Master `>`, `>>`, `2>`, and `/dev/null` to capture what matters.",
+  "objective": "Complete all three stages, then run `quest check`:\n1. Stage 1 (`>`): Run `/challenge/run > ~/myflag` to redirect `stdout` into `~/myflag` while `stderr` still prints on your terminal.\n2. Stage 2 (`>` and `>>`): Run `/challenge/run --part1 > ~/twopart.txt` and then `/challenge/run --part2 >> ~/twopart.txt` to append the second half without overwriting the first.\n3. Stage 3 (`2>` and `/dev/null`): `/challenge/run2` prints decoy lines on `stdout` and the real Stage 3 token on `stderr`. Redirect `stderr` into `~/stderr_flag.txt` (`2> ~/stderr_flag.txt`) and silence `stdout` (`> /dev/null`).\n4. Run `quest check` to claim your `CYBERUS{...}` flag!",
+  "hints": [
+    "`>` redirects `stdout` (stream 1) to a file (overwriting it); `>>` appends `stdout` to the end of a file.",
+    "`2> file` redirects `stderr` (stream 2) to `file`. Note: `2>&1` merges `stderr` into wherever `stdout` points, whereas `2> file` captures ONLY `stderr`!",
+    "Run:\n  /challenge/run > ~/myflag\n  /challenge/run --part1 > ~/twopart.txt\n  /challenge/run --part2 >> ~/twopart.txt\n  /challenge/run2 2> ~/stderr_flag.txt > /dev/null\nThen run `quest check`."
+  ],
+  "commands_taught": [">", ">>", "2>", "2>&1", "2>/dev/null"]
+}

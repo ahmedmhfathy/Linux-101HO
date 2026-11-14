@@ -1,0 +1,17 @@
+{
+  "id": "09",
+  "slug": "bughunt-fuzzing-pipeline",
+  "part": 3,
+  "title": "Bug Hunt: Fuzzing & Exploit Pipeline",
+  "kind": "state",
+  "bonus": false,
+  "bug_hunting": true,
+  "story": "[BUG HUNTING MISSION - PART 3]\nIn real bug bounty hunting, directory fuzzers emit hundreds of timeout errors on `stderr` and HTTP status results on `stdout`. Once you filter and sort the live `200 OK` endpoints using pipes, you replay SQL injection payloads (`~/recon/payloads.txt`) into a vulnerable login tester (`/challenge/sqli_runner`) and capture the database debug dump on `stderr`.",
+  "objective": "Using ONLY taught commands (`2>/dev/null`, `|`, `grep`, `sort`, `>`, `<`, `2>`, `cat`):\n1. Stage 1 (Fuzzer Triage): Run `/challenge/dirfuzz`, silence `stderr` (`2>/dev/null`), pipe `stdout` through `grep \"200 OK\"` and `sort`, and save the result to `~/recon/live_endpoints.txt`.\n2. Stage 2 (SQLi Replay): Feed `~/recon/payloads.txt` into `/challenge/sqli_runner` via `<` (or `|`) while redirecting its `stderr` database error dump to `~/recon/db_error.log` (`2> ~/recon/db_error.log`).\n3. Read `~/recon/db_error.log` (or run `quest check`) to get your `CYBERUS{...}` flag and submit it!",
+  "hints": [
+    "Stage 1 pipeline: `/challenge/dirfuzz 2>/dev/null | grep \"200 OK\" | sort > ~/recon/live_endpoints.txt`.",
+    "Verify `cat ~/recon/live_endpoints.txt` shows only sorted `[200 OK]` lines and no errors or `404` lines.",
+    "Stage 2 command: `/challenge/sqli_runner < ~/recon/payloads.txt 2> ~/recon/db_error.log > /dev/null`, then run `grep \"CYBERUS\" ~/recon/db_error.log` or `quest check`."
+  ],
+  "commands_taught": [">", "2>", "2>/dev/null", "<", "|", "grep", "sort"]
+}
