@@ -422,25 +422,28 @@ class QuestEngine:
         env = self._build_setup_env(mission, state, phase)
 
         if phase == "home":
-            # Read setup.sh content as root before dropping privileges, since /opt/quest/missions is 0700
-            script_content = setup_script.read_text(encoding="utf-8")
+            # Open setup.sh as root before dropping privileges (since /opt/quest/missions is 0700),
+            # and pass it via /dev/fd so stdin remains free for heredocs inside setup.sh.
+            script_fd = os.open(str(setup_script), os.O_RDONLY)
+            try:
+                def drop_privs() -> None:
+                    if hasattr(os, "setresgid") and os.geteuid() == 0:
+                        os.setresgid(STUDENT_GID, STUDENT_GID, STUDENT_GID)
+                        os.setresuid(STUDENT_UID, STUDENT_UID, STUDENT_UID)
 
-            def drop_privs() -> None:
-                if hasattr(os, "setresgid") and os.geteuid() == 0:
-                    os.setresgid(STUDENT_GID, STUDENT_GID, STUDENT_GID)
-                    os.setresuid(STUDENT_UID, STUDENT_UID, STUDENT_UID)
-
-            proc = subprocess.run(
-                ["/bin/bash", "-s", "home"],
-                input=script_content,
-                text=True,
-                env=env,
-                cwd=str(self.home_dir) if self.home_dir.exists() else None,
-                preexec_fn=drop_privs if os.name == "posix" else None,
-                capture_output=True,
-                timeout=30,
-                check=False,
-            )
+                proc = subprocess.run(
+                    ["/bin/bash", f"/dev/fd/{script_fd}", "home"],
+                    text=True,
+                    env=env,
+                    cwd=str(self.home_dir) if self.home_dir.exists() else None,
+                    preexec_fn=drop_privs if os.name == "posix" else None,
+                    pass_fds=(script_fd,),
+                    capture_output=True,
+                    timeout=30,
+                    check=False,
+                )
+            finally:
+                os.close(script_fd)
         else:
             proc = subprocess.run(
                 ["/bin/bash", str(setup_script), "system"],

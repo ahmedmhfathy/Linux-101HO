@@ -24,13 +24,12 @@ ENV DEBIAN_FRONTEND=noninteractive \
     TERM=xterm-256color \
     TZ=UTC
 
-# Re-enable man pages in stripped Ubuntu image BEFORE installing packages
+# Re-enable man pages in stripped Ubuntu 24.04 image BEFORE installing packages
 RUN rm -f /etc/dpkg/dpkg.cfg.d/excludes && \
     apt-get update && \
     apt-get install -y --no-install-recommends \
         man-db \
         manpages \
-        manpages-POSIX \
         less \
         nano \
         tree \
@@ -46,9 +45,13 @@ RUN rm -f /etc/dpkg/dpkg.cfg.d/excludes && \
         bsdextrautils \
         sed \
         gawk && \
-    apt-get install -y --reinstall --no-install-recommends coreutils findutils grep man-db && \
+    if [ -f /usr/bin/man.REAL ]; then \
+        rm -f /usr/bin/man; \
+        dpkg-divert --quiet --remove --rename /usr/bin/man; \
+    fi && \
+    apt-get install -y --reinstall --no-install-recommends coreutils findutils grep man-db manpages && \
     rm -rf /var/lib/apt/lists/* && \
-    man ls | head -n 5 >/dev/null
+    MANPAGER=cat man ls >/dev/null
 
 # Ensure UID 1000 belongs to `student` (Ubuntu 24.04 ships with `ubuntu` at UID 1000)
 RUN if id -u ubuntu >/dev/null 2>&1; then userdel -r ubuntu || true; fi && \

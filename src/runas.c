@@ -185,7 +185,7 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    if (setresgid(0, 0, 0) != 0 || setresuid(0, 0, 0) != 0) {
+    if (setresuid(0, 0, 0) != 0 || setresgid(0, 0, 0) != 0) {
         fprintf(stderr, "runas: failed to elevate privileges: %s\n", strerror(errno));
         return 1;
     }

