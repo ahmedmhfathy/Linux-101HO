@@ -33,12 +33,88 @@ run_as_student() {
     runuser -u student -- bash -c "export HOME=/home/student PATH=/usr/local/bin:/usr/bin:/bin; cd /home/student; $1"
 }
 
+test_mission_entry() {
+    local entry="$1"
+    IFS=':' read -r MID MSLUG MKIND <<< "$entry"
+    local MDIR="/opt/quest/missions/${MSLUG}"
+
+    echo -e "\n${YELLOW}---> Testing Mission ${MID} (${MSLUG}) <---${RESET}"
+
+    run_as_student "quest show ${MID}" >/dev/null
+
+    if [[ "$MID" == "01" ]]; then
+        DECOY_OUT="$(run_as_student "cd /var/log && ./run" 2>&1 || true)"
+        if printf '%s\n' "$DECOY_OUT" | grep -q "Wrong path yasta I TOLD YOU TO USE ABSOLUTE PATHS YA3AM ENTA"; then
+            record_pass "Mission 01: /var/log/run decoy prints expected yasta message"
+        else
+            record_fail "Mission 01: /var/log/run decoy message" "unexpected output: $DECOY_OUT"
+        fi
+    elif [[ "$MID" == "02" ]]; then
+        if run_as_student "MANPAGER=cat man run | grep -q -- '--please'" && \
+           run_as_student "MANPAGER=cat man /challenge/run | grep -q -- '--please'"; then
+            record_pass "Mission 02: man run and man /challenge/run render --please option"
+        else
+            record_fail "Mission 02: man page check" "man run or man /challenge/run did not show --please"
+        fi
+
+        CASE_A="$(run_as_student "/challenge/run" 2>&1 || true)"
+        if printf '%s\n' "$CASE_A" | grep -q "Rude. You didn't even ask nicely."; then
+            record_pass "Mission 02: Case A (no options) prints Rude message"
+        else
+            record_fail "Mission 02: Case A (no options)" "unexpected: $CASE_A"
+        fi
+
+        CASE_B="$(run_as_student "cd ~ && /challenge/run --please" 2>&1 || true)"
+        if printf '%s\n' "$CASE_B" | grep -q "Almost! You asked nicely, but I don't feel at home here."; then
+            record_pass "Mission 02: Case B (in ~) rejects root of home dir"
+        else
+            record_fail "Mission 02: Case B (in ~)" "unexpected: $CASE_B"
+        fi
+    fi
+
+    if [[ "$MKIND" == "state" ]]; then
+        if run_as_student "quest check ${MID}" >/dev/null 2>&1; then
+            record_fail "Mission ${MID}: negative check before solve" "quest check passed before solving"
+        else
+            record_pass "Mission ${MID}: negative check before solve fails as expected"
+        fi
+    fi
+
+    local TMP_SOLVE
+    TMP_SOLVE="$(mktemp /tmp/solve_${MID}_XXXXXX.sh)"
+    cp -f "${MDIR}/solve.sh" "$TMP_SOLVE"
+    chmod 0755 "$TMP_SOLVE"
+
+    if run_as_student "$TMP_SOLVE" >/dev/null; then
+        record_pass "Mission ${MID}: solve.sh executed and flag submitted"
+    else
+        record_fail "Mission ${MID}: solve.sh execution" "solve.sh exited non-zero"
+    fi
+    rm -f "$TMP_SOLVE"
+
+    if [[ "$MKIND" == "state" ]]; then
+        run_as_student "quest reset ${MID}" >/dev/null
+        if run_as_student "quest check ${MID}" >/dev/null 2>&1; then
+            record_fail "Mission ${MID}: quest reset restores failing state" "quest check still passed after reset"
+        else
+            record_pass "Mission ${MID}: quest reset restores failing state"
+        fi
+
+        local TMP_SOLVE2
+        TMP_SOLVE2="$(mktemp /tmp/solve_${MID}_XXXXXX.sh)"
+        cp -f "${MDIR}/solve.sh" "$TMP_SOLVE2"
+        chmod 0755 "$TMP_SOLVE2"
+        run_as_student "$TMP_SOLVE2" >/dev/null
+        rm -f "$TMP_SOLVE2"
+    fi
+}
+
 echo -e "${CYAN}============================================================${RESET}"
 echo -e "${CYAN}   CYBERUS LINUX QUEST - AUTOMATED TEST HARNESS${RESET}"
 echo -e "${CYAN}============================================================${RESET}"
 
-# 0. Clean state before testing
-run_as_student "quest reset --all --yes" >/dev/null
+# 0. Clean state via killswitch before testing
+run_as_student "quest killswitch" >/dev/null
 
 # 1. Doctor & Man Page Check
 if run_as_student "quest doctor" | grep -q "DOCTOR: OK"; then
@@ -47,13 +123,13 @@ else
     record_fail "00a: quest doctor sanity check" "quest doctor did not report OK"
 fi
 
-if run_as_student "man ls | head -n 5" >/dev/null 2>&1; then
+if run_as_student "MANPAGER=cat man ls | head -n 5" >/dev/null 2>&1; then
     record_pass "00b: man pages installed and functional"
 else
     record_fail "00b: man pages installed and functional" "man ls failed"
 fi
 
-# 2. Privilege & Security Boundary Tests (GPT-CONCERNS verification)
+# 2. Privilege & Security Boundary Tests
 if run_as_student "/usr/local/lib/quest/runas /bin/sh" >/dev/null 2>&1; then
     record_fail "SEC-1: direct /usr/local/lib/quest/runas invocation refused" "runas allowed direct invocation"
 else
@@ -72,87 +148,52 @@ else
     record_pass "SEC-3: /opt/quest/engine unreadable by student"
 fi
 
-# 3. Mission-by-Mission Verification
-MISSIONS=(
+# 3. Verify Bug Hunting & Bonus missions are locked by default (Home Tasks)
+if run_as_student "quest show 03" >/dev/null 2>&1; then
+    record_fail "LOCK-1: Bug Hunting Mission 03 locked by default" "Mission 03 was unlocked"
+else
+    record_pass "LOCK-1: Bug Hunting Mission 03 locked by default"
+fi
+
+# 4. Hands-On Missions Progression (00 -> 01 -> 02 -> 04 -> 05 -> 07 -> 08)
+HANDSON_MISSIONS=(
     "00:00-hello-linux:program"
     "01:01-position-thyself:program"
     "02:02-home-sweet-home:state"
-    "03:03-bughunt-recon-dotfile:state"
-    "B1:B1-treasure-hunt:program"
     "04:04-evidence-room:state"
     "05:05-locked-doors:state"
-    "06:06-bughunt-source-audit:state"
-    "B2:B2-gtfo:program"
     "07:07-redirect-trilogy:state"
     "08:08-pipe-dream:program"
+)
+
+for entry in "${HANDSON_MISSIONS[@]}"; do
+    test_mission_entry "$entry"
+done
+
+# 5. Unlock Home Tasks & Verify All 6 Home Missions (03, B1, 06, B2, 09, B3) with full checks
+run_as_student "quest unlock-homework" >/dev/null
+HOME_MISSIONS=(
+    "03:03-bughunt-recon-dotfile:state"
+    "B1:B1-treasure-hunt:program"
+    "06:06-bughunt-source-audit:state"
+    "B2:B2-gtfo:program"
     "09:09-bughunt-fuzzing-pipeline:state"
     "B3:B3-log-forensics:state"
 )
 
-for entry in "${MISSIONS[@]}"; do
-    IFS=':' read -r MID MSLUG MKIND <<< "$entry"
-    MDIR="/opt/quest/missions/${MSLUG}"
-
-    echo -e "\n${YELLOW}---> Testing Mission ${MID} (${MSLUG}) <---${RESET}"
-
-    # Activate mission
-    run_as_student "quest show ${MID}" >/dev/null
-
-    # Negative check before solving
-    if [[ "$MKIND" == "state" ]]; then
-        if run_as_student "quest check ${MID}" >/dev/null 2>&1; then
-            record_fail "Mission ${MID}: negative check before solve" "quest check passed before solving"
-        else
-            record_pass "Mission ${MID}: negative check before solve fails as expected"
-        fi
-    elif [[ "$MID" == "01" ]]; then
-        # Verify relative invocation ./run fails in Mission 01
-        if run_as_student "cd /challenge && ./run" >/dev/null 2>&1; then
-            record_fail "Mission 01: relative path ./run rejected" "./run succeeded unexpectedly"
-        else
-            record_pass "Mission 01: relative path ./run rejected"
-        fi
-    fi
-
-    # Copy solve.sh to temporary script accessible by student and execute
-    TMP_SOLVE="$(mktemp /tmp/solve_${MID}_XXXXXX.sh)"
-    cp -f "${MDIR}/solve.sh" "$TMP_SOLVE"
-    chmod 0755 "$TMP_SOLVE"
-
-    if run_as_student "$TMP_SOLVE" >/dev/null; then
-        record_pass "Mission ${MID}: solve.sh executed and flag submitted"
-    else
-        record_fail "Mission ${MID}: solve.sh execution" "solve.sh exited non-zero"
-    fi
-    rm -f "$TMP_SOLVE"
-
-    # Verify reset returns state missions to failing state, then re-solve
-    if [[ "$MKIND" == "state" ]]; then
-        run_as_student "quest reset ${MID}" >/dev/null
-        if run_as_student "quest check ${MID}" >/dev/null 2>&1; then
-            record_fail "Mission ${MID}: quest reset restores failing state" "quest check still passed after reset"
-        else
-            record_pass "Mission ${MID}: quest reset restores failing state"
-        fi
-
-        # Re-run solve.sh so files remain in solved state
-        TMP_SOLVE2="$(mktemp /tmp/solve_${MID}_XXXXXX.sh)"
-        cp -f "${MDIR}/solve.sh" "$TMP_SOLVE2"
-        chmod 0755 "$TMP_SOLVE2"
-        run_as_student "$TMP_SOLVE2" >/dev/null
-        rm -f "$TMP_SOLVE2"
-    fi
+for entry in "${HOME_MISSIONS[@]}"; do
+    test_mission_entry "$entry"
 done
 
-# 4. Symlink Traversal Defense Test on Checkers
-run_as_student "ln -sf /var/lib/quest/secret ~/notes/plan.txt"
+# 6. Symlink Traversal Defense Test on Checkers
+run_as_student "mkdir -p ~/myroom && ln -sf /var/lib/quest/secret ~/myroom/.code.txt"
 if run_as_student "quest check 02" >/dev/null 2>&1; then
-    record_fail "SEC-4: symlink escape in ~/notes/plan.txt refused by checker" "symlink was followed"
+    record_fail "SEC-4: symlink escape in ~/myroom/.code.txt refused by checker" "symlink was followed"
 else
-    record_pass "SEC-4: symlink escape in ~/notes/plan.txt refused by checker"
+    record_pass "SEC-4: symlink escape in ~/myroom/.code.txt refused by checker"
 fi
 
-# 5. Alternative Solution Verification (Mission 08 `<` redirection & Mission 04 `mv`)
+# 7. Alternative Solution Verification (Mission 08 `<` redirection)
 run_as_student "quest show 08" >/dev/null
 if run_as_student "PIPE_OUT=\$(/challenge/stage1 | /challenge/stage2 | /challenge/stage3); printf '%s\n' \"\$PIPE_OUT\" | grep -oE 'CYBERUS-PIPE-PASSPHRASE-[A-F0-9]+' > ~/pass08.txt; /challenge/interrogator < ~/pass08.txt | grep -q 'CYBERUS{'" ; then
     record_pass "ALT-08: /challenge/interrogator accepts < file redirection"
@@ -160,11 +201,19 @@ else
     record_fail "ALT-08: /challenge/interrogator accepts < file redirection" "failed < redirection"
 fi
 
-# 6. Export token check
+# 8. Export token check
 if run_as_student "quest export" | grep -q "CYBERUS-PROGRESS-v1\."; then
     record_pass "EXPORT: quest export generates signed token"
 else
     record_fail "EXPORT: quest export generates signed token" "missing token"
+fi
+
+# 9. Killswitch Verification (resets all progress back to 00 and re-locks homework)
+run_as_student "killswitch" >/dev/null
+if run_as_student "quest status" | grep -q "0/7 completed"; then
+    record_pass "KILLSWITCH: killswitch resets all progress to 0/7 and locks homework"
+else
+    record_fail "KILLSWITCH: killswitch resets all progress" "progress was not 0/7"
 fi
 
 echo -e "\n${CYAN}============================================================${RESET}"

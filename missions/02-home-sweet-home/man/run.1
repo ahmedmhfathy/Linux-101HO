@@ -1,12 +1,13 @@
-.TH RUN 1 "2026" "Cyberus Linux Quest" "Mission 02 Manual"
+.TH RUN 1 "November 2026" "Cyberus Linux Quest" "User Commands"
 .SH NAME
-run \- Home Sweet Home challenge binary
+run \- Cyberus Home Sweet Home challenge program
 .SH SYNOPSIS
 .B /challenge/run
-.RI [ OPTIONS ]
+[\fIOPTIONS\fR]
 .SH DESCRIPTION
 .B /challenge/run
-is a polite program that only helps users who ask nicely from inside a folder in their home directory.
+is a polite program that hands out instructions for claiming the Mission 02 flag,
+but only if you ask nicely from inside a subdirectory of your home folder (\fB~/\fR\fIfolder\fR).
 .SH OPTIONS
 .TP
 .BR \-v ", " \-\-verbose
@@ -20,3 +21,13 @@ Simulate execution without writing any files.
 .TP
 .BR \-h ", " \-\-help
 Display help and list supported options.
+.SH EXAMPLES
+Create a directory inside your home folder, step inside it, and ask nicely:
+.PP
+.nf
+.RS
+mkdir ~/myfolder
+cd ~/myfolder
+/challenge/run --please
+.RE
+.fi

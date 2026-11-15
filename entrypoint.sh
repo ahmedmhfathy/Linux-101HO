@@ -24,6 +24,26 @@ EOF
 chown root:root /usr/local/bin/killswitch
 chmod 0755 /usr/local/bin/killswitch
 
+# Install `man` wrapper so `man /challenge/run` (or `man ./run`) opens `man run`
+# instead of treating the ELF binary `/challenge/run` as a raw troff file!
+cat << 'EOF' > /usr/local/bin/man
+#!/usr/bin/env bash
+ARGS=()
+for arg in "$@"; do
+    case "$arg" in
+        /challenge/*|./run|*/challenge/run)
+            ARGS+=("${arg##*/}")
+            ;;
+        *)
+            ARGS+=("$arg")
+            ;;
+    esac
+done
+exec /usr/bin/man "${ARGS[@]}"
+EOF
+chown root:root /usr/local/bin/man
+chmod 0755 /usr/local/bin/man
+
 # Populate /home/student from /etc/skel if empty
 if [[ ! -f "$HOME_DIR/.bashrc" ]] && [[ -d /etc/skel ]]; then
     cp -rn /etc/skel/. "$HOME_DIR/" || true

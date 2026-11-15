@@ -16,9 +16,11 @@ if [[ "$PHASE" == "system" ]]; then
         chmod 4755 "$CHALLENGE_DIR/run"
     fi
     if [[ -f "$MISSION_DIR/man/run.1" ]]; then
+        mkdir -p /usr/share/man/man1 /usr/local/share/man/man1
+        cp -f "$MISSION_DIR/man/run.1" /usr/share/man/man1/run.1
         cp -f "$MISSION_DIR/man/run.1" /usr/local/share/man/man1/run.1
-        chmod 0644 /usr/local/share/man/man1/run.1
-        mandb -q /usr/local/share/man 2>/dev/null || true
+        chmod 0644 /usr/share/man/man1/run.1 /usr/local/share/man/man1/run.1
+        mandb -q >/dev/null 2>&1 || true
     fi
     printf '02\n' > "$CHALLENGE_DIR/.mission_run"
     printf '02\n' > "$CHALLENGE_DIR/.active_mission"
