@@ -73,10 +73,16 @@ COPY --chown=root:root entrypoint.sh /opt/quest/entrypoint.sh
 COPY --from=builder --chown=root:root /src/runas /usr/local/lib/quest/runas
 COPY --from=builder --chown=root:root /src/runas /usr/local/bin/quest
 
-RUN chmod 0755 /opt/quest /usr/local/lib/quest /challenge /opt/quest/entrypoint.sh && \
+# Normalize permissions recursively (strips 0777/go+w bits inherited from Windows/VM shared folders)
+RUN chown -R root:root /opt/quest /usr/local/lib/quest /challenge /opt/vault /var/lib/quest /usr/local/bin/quest && \
+    chmod -R go-w /opt/quest /usr/local/lib/quest /challenge /opt/vault /usr/local/bin && \
+    chmod 0755 / /usr /usr/local /usr/local/bin /opt /opt/quest /usr/local/lib/quest /challenge /opt/quest/entrypoint.sh && \
     chmod 0700 /opt/quest/engine /opt/quest/missions /opt/quest/tests /var/lib/quest && \
+    chmod 0600 /opt/quest/engine/*.py && \
     chmod 0755 /usr/local/lib/quest/runas && \
     chmod 4755 /usr/local/bin/quest && \
+    find /opt/quest/missions -type d -exec chmod 0700 {} + && \
+    find /opt/quest/missions -type f -exec chmod 0600 {} + && \
     find /opt/quest/missions -name "*.sh" -exec chmod 0700 {} + && \
     chmod 0700 /opt/quest/tests/run_all.sh
 

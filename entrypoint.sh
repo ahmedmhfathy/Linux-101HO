@@ -5,6 +5,12 @@ STATE_DIR="/var/lib/quest"
 HOME_DIR="/home/student"
 CHALLENGE_DIR="/challenge"
 
+# Ensure container hostname resolves in /etc/hosts (prevents sudo warning with --network none)
+CURRENT_HOSTNAME="$(hostname 2>/dev/null || echo lab)"
+if ! grep -qE "(^|[[:space:]])${CURRENT_HOSTNAME}([[:space:]]|$)" /etc/hosts 2>/dev/null; then
+    printf '127.0.1.1\t%s\n' "$CURRENT_HOSTNAME" >> /etc/hosts 2>/dev/null || true
+fi
+
 mkdir -p "$STATE_DIR" "$CHALLENGE_DIR" "$HOME_DIR"
 chown root:root "$STATE_DIR" "$CHALLENGE_DIR"
 chmod 0700 "$STATE_DIR"
