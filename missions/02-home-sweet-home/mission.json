@@ -2,16 +2,17 @@
   "id": "02",
   "slug": "home-sweet-home",
   "part": 1,
+  "category": "Working with Files",
   "title": "Home Sweet Home",
   "kind": "state",
   "bonus": false,
   "bug_hunting": false,
-  "story": "In Linux, Bash builtins (like `cd` or `pwd`) are documented with `help <builtin>`, while external programs provide manual pages (`man <program>`) or a `--help` flag. Read the manual for `/challenge/run` to unlock Stage A, then take structured notes in Stage B.",
-  "objective": "1. Read the documentation for `/challenge/run` using `man run` or `/challenge/run --help`.\n2. Stage A: Run `/challenge/run` with an absolute path inside `/home/student` (hint: `~/stage_a.txt` expands to `/home/student/stage_a.txt`).\n3. Stage B: Read the file `/challenge/run` created using `cat`, create the directory `~/notes`, and write the secret phrase (`{MISSION02_PHRASE}`) into `~/notes/plan.txt` using `nano`.\n4. Run `quest check` to reveal your `CYBERUS{...}` flag, then submit it.",
+  "intro": "In Linux, commands often accept options (also called flags) that modify how a program behaves. They are typed after the command name and usually start with a single dash for short names (like -v) or a double dash for full words (like --version). Most command-line programs include a built-in option that prints out usage instructions and lists every flag the program supports",
+  "story": "/challenge/run can give you the flag, but only if you ask nicely and do what it tells you to do.",
+  "description": "Check /challenge/run's documentation to find the option for asking nicely.\nRun the program with that option and follow the instructions it gives you.",
   "hints": [
-    "Try `man run` or `/challenge/run --help` to see what arguments `/challenge/run` expects.",
-    "`~` expands to `/home/student` automatically in Bash! Run `/challenge/run ~/stage_a.txt` and then `cat ~/stage_a.txt`.",
-    "Run `mkdir -p ~/notes`, then `nano ~/notes/plan.txt`, type the exact `CYBERUS-NOTE-...` phrase shown in `~/stage_a.txt`, save (Ctrl+O, Enter, Ctrl+X), and run `quest check`."
-  ],
-  "commands_taught": ["help", "man", "mkdir", "touch", "cat", "nano"]
+    "Check the program's manual page or built-in help option to see what flags it accepts.",
+    "Make sure you create a folder inside your home directory (`~`), move inside that folder, and run `/challenge/run` with the polite option.",
+    "List hidden files in your folder, open `.code.txt`, follow the instruction comment inside it, save, and run `quest check`."
+  ]
 }

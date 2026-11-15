@@ -4,12 +4,10 @@
 import os
 import shutil
 import stat
-import subprocess
 import sys
 from pathlib import Path
 from typing import List, Optional
 
-# Ensure package import works when invoked via python3 -I /opt/quest/engine/cli.py
 ENGINE_DIR = Path(__file__).resolve().parent
 if str(ENGINE_DIR.parent) not in sys.path:
     sys.path.insert(0, str(ENGINE_DIR.parent))
@@ -17,7 +15,6 @@ if str(ENGINE_DIR.parent) not in sys.path:
 from engine.core import (  # noqa: E402
     ENGINE_VERSION,
     FLAG_PREFIX,
-    STUDENT_GID,
     STUDENT_UID,
     QuestEngine,
     QuestError,
@@ -39,7 +36,7 @@ RESET = "\033[0m"
 
 def format_mission_text(text: str, student_id: str) -> str:
     """Substitute dynamic per-student placeholders in mission descriptions."""
-    dirs_01 = ["/var/log", "/etc", "/usr/share/doc", "/usr/include", "/var/backups"]
+    dirs_01 = ["/var/log"]
     req_dir_01 = deterministic_choice(student_id, "mission01_dir", dirs_01)
     phrase_02 = f"CYBERUS-NOTE-{deterministic_token(student_id, 'mission02_phrase', 8).upper()}"
     return (
@@ -63,7 +60,14 @@ def cmd_show(engine: QuestEngine, mission_id: Optional[str] = None) -> int:
             return 1
         unlocked_ids = {m["id"] for m in engine.get_unlocked_missions(state)}
         if mission["id"] not in unlocked_ids:
-            print(f"{YELLOW}[!] Mission {mission['id']} is locked. Complete earlier required missions first.{RESET}")
+            if mission.get("bug_hunting") or mission.get("bonus"):
+                print(
+                    f"{YELLOW}[!] Mission {mission['id']} ({mission['title']}) is locked for at-home practice.{RESET}"
+                )
+            else:
+                print(
+                    f"{YELLOW}[!] Mission {mission['id']} is locked. Complete earlier missions first.{RESET}"
+                )
             return 1
         engine.activate_mission(mission["id"], reset_home=False)
     else:
@@ -85,23 +89,29 @@ def cmd_show(engine: QuestEngine, mission_id: Optional[str] = None) -> int:
         tag = f" {RED}[BUG HUNTING]{RESET}"
 
     student_id = state["student_id"]
+    intro = format_mission_text(mission.get("intro", ""), student_id)
     story = format_mission_text(mission.get("story", ""), student_id)
-    objective = format_mission_text(mission.get("objective", ""), student_id)
-    cmds = ", ".join(mission.get("commands_taught", []))
+    desc = format_mission_text(
+        mission.get("description", mission.get("objective", "")), student_id
+    )
+    part_num = int(mission.get("part", 0))
+    default_cat = "Warm-Up" if part_num == 0 else f"Part {part_num}"
+    category_label = mission.get("category", default_cat)
 
     print_banner()
-    print(f"{BOLD}Mission {mid}: {mission['title']}{RESET}{tag}  {status_badge}")
-    print(f"{DIM}Part {mission.get('part', 0)} | Commands: {cmds}{RESET}")
+    print(f"{BOLD}{CYAN}{category_label}{RESET}")
+    print(f"{BOLD}Mission {mid} – {mission['title']}{RESET}{tag}  {status_badge}")
     print("-" * 60)
+    if intro:
+        print(f"{intro}\n")
     print(f"{BOLD}Story:{RESET}\n{story}\n")
-    print(f"{BOLD}Objective:{RESET}\n{objective}\n")
+    print(f"{BOLD}Description:{RESET}\n{desc}\n")
     print("-" * 60)
     if mission.get("kind") == "state":
-        print(f"Next step: Complete the objective, then run `{CYAN}quest check {mid}{RESET}`")
-        print(f"           Once you get the flag, run `{CYAN}quest submit {FLAG_PREFIX}{{...}}{RESET}`")
+        print(f"When ready, verify with: `{CYAN}quest check{RESET}`  |  Submit flag: `{CYAN}quest submit {FLAG_PREFIX}{{...}}{RESET}`")
     else:
-        print(f"Next step: Obtain the flag and run `{CYAN}quest submit {FLAG_PREFIX}{{...}}{RESET}`")
-    print(f"Need help? Run `{CYAN}quest hint{RESET}` | List all missions: `{CYAN}quest list{RESET}`")
+        print(f"Submit flag: `{CYAN}quest submit {FLAG_PREFIX}{{...}}{RESET}`")
+    print(f"Need help? `{CYAN}quest hint{RESET}`  |  All missions: `{CYAN}quest list{RESET}`  |  Reset all: `{CYAN}quest killswitch{RESET}`")
     return 0
 
 
@@ -134,11 +144,13 @@ def cmd_list(engine: QuestEngine) -> int:
 
         badges: List[str] = []
         if m.get("bug_hunting"):
-            badges.append(f"{RED}[BugHunt]{RESET}")
+            badges.append(f"{RED}[BugHunt - Home Task]{RESET}")
         if m.get("bonus"):
-            badges.append(f"{MAGENTA}[Bonus]{RESET}")
+            badges.append(f"{MAGENTA}[Bonus - Home Task]{RESET}")
         badge_str = (" " + " ".join(badges)) if badges else ""
-        print(f"  {status}  {BOLD}{mid:<3}{RESET} {m['title']}{badge_str}")
+        cat = m.get("category", "")
+        cat_str = f" {DIM}({cat}){RESET}" if cat else ""
+        print(f"  {status}  {BOLD}{mid:<3}{RESET} {m['title']}{cat_str}{badge_str}")
 
     print(f"\nTip: Run `{CYAN}quest show <ID>{RESET}` to switch to any `[OPEN]` or `[DONE]` mission.")
     return 0
@@ -148,24 +160,28 @@ def cmd_status(engine: QuestEngine) -> int:
     state = engine.load_state()
     missions = engine.load_missions()
     completed = state.get("completed", {})
-    req_missions = [m for m in missions if not m.get("bonus", False)]
-    bonus_missions = [m for m in missions if m.get("bonus", False)]
-    req_done = sum(1 for m in req_missions if m["id"] in completed)
-    bonus_done = sum(1 for m in bonus_missions if m["id"] in completed)
+    handson_missions = [
+        m for m in missions if not m.get("bonus", False) and not m.get("bug_hunting", False)
+    ]
+    home_missions = [
+        m for m in missions if m.get("bonus", False) or m.get("bug_hunting", False)
+    ]
+    handson_done = sum(1 for m in handson_missions if m["id"] in completed)
+    home_done = sum(1 for m in home_missions if m["id"] in completed)
     hints_total = sum(int(v) for v in state.get("hints_used", {}).values())
 
     print_banner()
-    print(f"  {BOLD}Student ID :{RESET} {state['student_id']}")
-    print(f"  {BOLD}Lab Version:{RESET} {state.get('version', ENGINE_VERSION)}")
-    print(f"  {BOLD}Main Quests:{RESET} {req_done}/{len(req_missions)} completed")
-    print(f"  {BOLD}Bonus      :{RESET} {bonus_done}/{len(bonus_missions)} completed")
-    print(f"  {BOLD}Hints Used :{RESET} {hints_total}")
+    print(f"  {BOLD}Student ID     :{RESET} {state['student_id']}")
+    print(f"  {BOLD}Lab Version    :{RESET} {state.get('version', ENGINE_VERSION)}")
+    print(f"  {BOLD}Hands-On Quests:{RESET} {handson_done}/{len(handson_missions)} completed")
+    print(f"  {BOLD}Home Tasks     :{RESET} {home_done}/{len(home_missions)} completed")
+    print(f"  {BOLD}Hints Used     :{RESET} {hints_total}")
 
     current = engine.get_current_mission(state)
     if current and current["id"] not in completed:
-        print(f"  {BOLD}Current    :{RESET} [{current['id']}] {current['title']}")
+        print(f"  {BOLD}Current        :{RESET} [{current['id']}] {current['title']}")
     else:
-        print(f"  {BOLD}Current    :{RESET} {GREEN}All missions complete!{RESET}")
+        print(f"  {BOLD}Current        :{RESET} {GREEN}All unlocked missions complete!{RESET}")
     return 0
 
 
@@ -225,13 +241,37 @@ def cmd_check(engine: QuestEngine, mission_id: Optional[str] = None) -> int:
     ok, msg, mission = engine.run_checker(target_mission["id"])
     if ok:
         flag = engine.get_flag(mission["id"], state)
-        print(f"{GREEN}[PASS] {msg}{RESET}")
-        print(f"\n  {BOLD}Flag:{RESET} {CYAN}{flag}{RESET}")
+        if msg.startswith("[+]"):
+            print(f"{GREEN}{msg}{RESET}")
+        else:
+            print(f"{GREEN}[PASS] {msg}{RESET}")
+            print(f"\n  {BOLD}Flag:{RESET} {CYAN}{flag}{RESET}")
         print(f"  Submit it now with: `{BOLD}quest submit {flag}{RESET}`")
         return 0
     else:
-        print(f"{RED}[FAIL] {msg}{RESET}")
+        if msg.startswith("[-]"):
+            print(f"{RED}{msg}{RESET}")
+        else:
+            print(f"{RED}[FAIL] {msg}{RESET}")
         return 1
+
+
+def cmd_killswitch(engine: QuestEngine) -> int:
+    """Immediate killswitch that wipes all progress and resets all missions without prompting."""
+    state = engine.load_state()
+    state["completed"] = {}
+    state["hints_used"] = {}
+    state["initialized_home"] = []
+    state["homework_unlocked"] = False
+    engine.save_state(state)
+    for m in engine.load_missions():
+        try:
+            engine.run_setup_phase(m, state, "home")
+        except Exception:
+            pass
+    engine.sync_active_environment(force_system_for_current=True)
+    print(f"{RED}[KILLSWITCH ACTIVATED]{RESET} {GREEN}All progress wiped and all mission files reset to Mission 00.{RESET}")
+    return 0
 
 
 def cmd_reset(engine: QuestEngine, args: List[str]) -> int:
@@ -244,19 +284,7 @@ def cmd_reset(engine: QuestEngine, args: List[str]) -> int:
             if ans.strip().lower() not in ("y", "yes"):
                 print("Aborted.")
                 return 0
-        state = engine.load_state()
-        state["completed"] = {}
-        state["hints_used"] = {}
-        state["initialized_home"] = []
-        engine.save_state(state)
-        for m in engine.load_missions():
-            try:
-                engine.run_setup_phase(m, state, "home")
-            except Exception:
-                pass
-        engine.sync_active_environment(force_system_for_current=True)
-        print(f"{GREEN}[+] All progress and mission files have been reset.{RESET}")
-        return 0
+        return cmd_killswitch(engine)
 
     state = engine.load_state()
     target_id = filtered[0] if filtered else None
@@ -272,6 +300,18 @@ def cmd_reset(engine: QuestEngine, args: List[str]) -> int:
 
     engine.activate_mission(mission["id"], reset_home=True)
     print(f"{GREEN}[+] Mission {mission['id']} ({mission['title']}) files have been restored.{RESET}")
+    return 0
+
+
+def cmd_unlock_homework(engine: QuestEngine, lock: bool = False) -> int:
+    state = engine.load_state()
+    state["homework_unlocked"] = not lock
+    engine.save_state(state)
+    engine.sync_active_environment(force_system_for_current=True)
+    if lock:
+        print(f"{YELLOW}[+] Bug Hunting & Bonus home-task missions are now LOCKED.{RESET}")
+    else:
+        print(f"{GREEN}[+] Bug Hunting & Bonus home-task missions are now UNLOCKED for unlocked parts.{RESET}")
     return 0
 
 
@@ -356,8 +396,14 @@ def main(argv: Optional[List[str]] = None) -> int:
             return cmd_submit(engine, rest[0] if rest else None)
         if sub == "check":
             return cmd_check(engine, rest[0] if rest else None)
+        if sub == "killswitch":
+            return cmd_killswitch(engine)
         if sub == "reset":
             return cmd_reset(engine, rest)
+        if sub == "unlock-homework":
+            return cmd_unlock_homework(engine, lock=False)
+        if sub == "lock-homework":
+            return cmd_unlock_homework(engine, lock=True)
         if sub == "doctor":
             return cmd_doctor(engine)
         if sub == "export":
@@ -373,11 +419,11 @@ def main(argv: Optional[List[str]] = None) -> int:
             print(f"  quest submit {FLAG_PREFIX}{{...}}    Submit a captured flag")
             print("  quest check [id]             Validate mission state and reveal flag")
             print("  quest reset [id|--all]       Restore mission files (or reset all)")
+            print("  quest killswitch             Immediately wipe all progress and reset all files")
             print("  quest doctor                 Run environment health check")
             print("  quest export                 Print signed progress token for instructor")
             return 0
 
-        # Allow `quest 02` as shorthand for `quest show 02`
         if engine.get_mission(sub) is not None:
             return cmd_show(engine, sub)
 

@@ -9,6 +9,7 @@ HOME_DIR="${QUEST_HOME_DIR:-/home/student}"
 
 if [[ "$PHASE" == "system" ]]; then
     mkdir -p "$CHALLENGE_DIR" /usr/local/share/man/man1
+    rm -f /var/log/run
     if [[ -f "$RUNAS_BIN" ]]; then
         cp -f "$RUNAS_BIN" "$CHALLENGE_DIR/run"
         chown root:root "$CHALLENGE_DIR/run"
@@ -23,7 +24,8 @@ if [[ "$PHASE" == "system" ]]; then
     printf '02\n' > "$CHALLENGE_DIR/.active_mission"
     chmod 0644 "$CHALLENGE_DIR/.mission_run" "$CHALLENGE_DIR/.active_mission"
 elif [[ "$PHASE" == "home" ]]; then
-    rm -rf -- "$HOME_DIR/notes" "$HOME_DIR/.stage02_a_done" "$HOME_DIR/stage_a.txt"
+    find "$HOME_DIR" -mindepth 2 -maxdepth 3 -name ".code.txt" -exec rm -f {} + 2>/dev/null || true
+    rm -f -- "$HOME_DIR/.code.txt"
 else
     echo "Usage: $0 {system|home}" >&2
     exit 1

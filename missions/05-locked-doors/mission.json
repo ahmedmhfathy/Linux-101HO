@@ -2,16 +2,16 @@
   "id": "05",
   "slug": "locked-doors",
   "part": 2,
+  "category": "Permissions & Privileges",
   "title": "Locked Doors",
   "kind": "state",
   "bonus": false,
   "bug_hunting": false,
-  "story": "Three locked permission doors inside `~/doors/` and a root-owned vault at `/opt/vault/flag.txt` stand between you and the flag. Master `ls -l`, `chmod`, and `sudo -l` to open every door.",
-  "objective": "1. Door 1: `~/doors/door1.txt` has mode `000` (Permission denied). Make it readable with `chmod u+r ~/doors/door1.txt`.\n2. Door 2: `~/doors/unlock.sh` is not executable. Run `chmod +x ~/doors/unlock.sh` and execute `~/doors/unlock.sh`.\n3. Door 3: Set `~/doors/door3.key` permissions to **exactly** `640` (`rw-r-----`) using `chmod 640 ~/doors/door3.key`.\n4. The Vault: Run `sudo -l` to see which command you are allowed to run as `root`, run `sudo /usr/bin/cat /opt/vault/flag.txt`, save the `VAULT_SECRET=...` line into `~/doors/vault.txt`, and run `quest check`.",
+  "story": "Three locked permission doors inside `~/doors/` and a root-owned vault at `/opt/vault/flag.txt` stand between you and the flag.",
+  "description": "1. Door 1: `~/doors/door1.txt` cannot be read (`Permission denied`). Fix its permissions so you can read it.\n2. Door 2: `~/doors/unlock.sh` refuses to execute. Make it executable and run it.\n3. Door 3: Set `~/doors/door3.key` permissions to **exactly** `640` (`rw-r-----`).\n4. The Vault: Discover which command you are permitted to run as `root`, read `/opt/vault/flag.txt`, save the `VAULT_SECRET=...` line into `~/doors/vault.txt`, and run `quest check`.",
   "hints": [
-    "Run `ls -l ~/doors` to inspect current permissions.",
-    "Run `chmod u+r ~/doors/door1.txt`, then `chmod +x ~/doors/unlock.sh && ~/doors/unlock.sh`, then `chmod 640 ~/doors/door3.key`.",
-    "Run `sudo -l` to see the exact allowed command (`sudo /usr/bin/cat /opt/vault/flag.txt`), copy the `VAULT_SECRET=...` value into `~/doors/vault.txt`, and run `quest check`."
-  ],
-  "commands_taught": ["ls", "chmod", "sudo"]
+    "Inspect the current permissions on all files inside `~/doors` first.",
+    "Grant owner read permission on `door1.txt`, add execute permission on `unlock.sh` and run it, and set octal `640` on `door3.key`.",
+    "List your allowed `sudo` privileges, run the permitted command to read `/opt/vault/flag.txt`, save the `VAULT_SECRET=...` value into `~/doors/vault.txt`, and run `quest check`."
+  ]
 }

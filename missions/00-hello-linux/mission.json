@@ -2,16 +2,16 @@
   "id": "00",
   "slug": "hello-linux",
   "part": 0,
+  "category": "Warm-Up",
   "title": "Hello, Linux",
   "kind": "program",
   "bonus": false,
   "bug_hunting": false,
   "story": "Welcome to the Cyberus Linux Quest lab! Before you start hunting for bugs and vulnerabilities, let's learn how to submit a flag.",
-  "objective": "Run the following command in your terminal to submit your warm-up flag:\n  quest submit CYBERUS{hello_linux}",
+  "description": "Submit the warm-up flag `CYBERUS{hello_linux}` using `quest submit`.",
   "hints": [
-    "Copy or type the exact command shown in the objective: quest submit CYBERUS{hello_linux}",
+    "Type `quest submit CYBERUS{hello_linux}` in your terminal.",
     "Flags always use the format CYBERUS{...}.",
     "Run: quest submit CYBERUS{hello_linux}"
-  ],
-  "commands_taught": ["quest"]
+  ]
 }

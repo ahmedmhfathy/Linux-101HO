@@ -11,10 +11,18 @@ if ! grep -qE "(^|[[:space:]])${CURRENT_HOSTNAME}([[:space:]]|$)" /etc/hosts 2>/
     printf '127.0.1.1\t%s\n' "$CURRENT_HOSTNAME" >> /etc/hosts 2>/dev/null || true
 fi
 
-mkdir -p "$STATE_DIR" "$CHALLENGE_DIR" "$HOME_DIR"
+mkdir -p "$STATE_DIR" "$CHALLENGE_DIR" "$HOME_DIR" /usr/local/bin
 chown root:root "$STATE_DIR" "$CHALLENGE_DIR"
 chmod 0700 "$STATE_DIR"
 chmod 0755 "$CHALLENGE_DIR"
+
+# Install `killswitch` command shortcut
+cat << 'EOF' > /usr/local/bin/killswitch
+#!/usr/bin/env bash
+exec /usr/local/bin/quest killswitch "$@"
+EOF
+chown root:root /usr/local/bin/killswitch
+chmod 0755 /usr/local/bin/killswitch
 
 # Populate /home/student from /etc/skel if empty
 if [[ ! -f "$HOME_DIR/.bashrc" ]] && [[ -d /etc/skel ]]; then

@@ -2,16 +2,16 @@
   "id": "08",
   "slug": "pipe-dream",
   "part": 3,
+  "category": "Pipelines & Standard Input",
   "title": "Pipe Dream",
   "kind": "program",
   "bonus": false,
   "bug_hunting": false,
-  "story": "In Linux, the pipe operator (`|`) connects the `stdout` of one program directly to the `stdin` of the next, forming an assembly line. Connect the three pipeline stages to generate a secret passphrase, then feed it into `/challenge/interrogator`.",
-  "objective": "1. Assembly Line: Connect `/challenge/stage1`, `/challenge/stage2`, and `/challenge/stage3` using pipes (`|`) so `stage3` prints your secret passphrase.\n2. The Interrogator: Feed that exact passphrase into `/challenge/interrogator`'s `stdin` using either a pipe (`echo \"...\" | /challenge/interrogator`) or input redirection (`/challenge/interrogator < file`).\n3. Submit the `CYBERUS{...}` flag it prints with `quest submit`.",
+  "story": "The final hands-on challenge is a three-stage assembly line followed by an interrogator that refuses interactive keyboard input.",
+  "description": "1. Assembly Line: Connect `/challenge/stage1`, `/challenge/stage2`, and `/challenge/stage3` in a single pipeline so `stage3` outputs your secret passphrase.\n2. The Interrogator: Feed that exact passphrase into `/challenge/interrogator`'s standard input (`stdin`) without typing it interactively to receive your flag.",
   "hints": [
-    "Chain all three stages together: `/challenge/stage1 | /challenge/stage2 | /challenge/stage3`.",
+    "Connect the output of `stage1` to `stage2`, and `stage2` to `stage3` using pipes.",
     "Copy the `CYBERUS-PIPE-PASSPHRASE-...` string printed by `stage3`.",
-    "Feed it into `/challenge/interrogator` with `echo \"CYBERUS-PIPE-PASSPHRASE-...\" | /challenge/interrogator` (or save it to a file and run `/challenge/interrogator < file`)."
-  ],
-  "commands_taught": ["|", "<", "cat"]
+    "Send that passphrase into `/challenge/interrogator` via a pipe or input file redirection."
+  ]
 }

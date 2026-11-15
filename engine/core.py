@@ -335,22 +335,24 @@ class QuestEngine:
         """Determine which missions are currently unlocked.
 
         - Mission 00 is always unlocked.
-        - Required missions unlock linearly (each requires the previous required mission).
-        - Bonus mission B<N> unlocks as soon as Part N is unlocked (i.e. when Part N's first mission unlocks).
+        - Hands-on required missions (non-bonus, non-bug_hunting) unlock linearly.
+        - Missions labeled `bug_hunting` or `bonus` are locked for at-home tasks unless
+          `homework_unlocked` is enabled in state (via `quest unlock-homework`), and they
+          NEVER block subsequent hands-on missions from unlocking.
         """
         missions = self.load_missions()
         completed = set(state.get("completed", {}).keys())
+        homework_unlocked = bool(state.get("homework_unlocked", False))
         unlocked: List[Dict[str, Any]] = []
 
-        # Track whether all previous required missions are completed
         all_prev_req_done = True
         unlocked_parts = {0}
         if "00" in completed:
             unlocked_parts.add(1)
 
-        # First pass for required missions and part unlocks
+        # First pass: hands-on required missions (skipping bonus and bug_hunting)
         for m in missions:
-            if m.get("bonus", False):
+            if m.get("bonus", False) or m.get("bug_hunting", False):
                 continue
             mid = m["id"]
             if mid == "00" or all_prev_req_done:
@@ -359,28 +361,32 @@ class QuestEngine:
             if mid not in completed:
                 all_prev_req_done = False
 
-        # Second pass to include bonus missions for unlocked parts
+        if not homework_unlocked:
+            return unlocked
+
+        # When homework is unlocked, include bug_hunting and bonus missions for unlocked parts
         unlocked_ids = {m["id"] for m in unlocked}
         result: List[Dict[str, Any]] = []
         for m in missions:
             if m["id"] in unlocked_ids:
                 result.append(m)
-            elif m.get("bonus", False) and int(m.get("part", 1)) in unlocked_parts:
+            elif (m.get("bonus", False) or m.get("bug_hunting", False)) and int(
+                m.get("part", 1)
+            ) in unlocked_parts:
                 result.append(m)
         return result
 
     def get_current_mission(self, state: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Return the first incomplete required mission, or first incomplete bonus mission."""
+        """Return the first incomplete hands-on required mission, or first incomplete unlocked mission."""
         unlocked = self.get_unlocked_missions(state)
         completed = set(state.get("completed", {}).keys())
         for m in unlocked:
-            if not m.get("bonus", False) and m["id"] not in completed:
+            if not m.get("bonus", False) and not m.get("bug_hunting", False) and m["id"] not in completed:
                 return m
         for m in unlocked:
-            if m.get("bonus", False) and m["id"] not in completed:
+            if m["id"] not in completed:
                 return m
-        missions = self.load_missions()
-        return missions[-1] if missions else None
+        return unlocked[-1] if unlocked else None
 
     def get_flag(self, mission_id: str, state: Optional[Dict[str, Any]] = None) -> str:
         if state is None:

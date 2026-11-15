@@ -10,88 +10,80 @@ from engine.core import deterministic_token
 
 
 def print_help() -> None:
-    print("Usage: /challenge/run <ABSOLUTE_PATH_IN_HOME>")
+    print("Usage: /challenge/run [OPTIONS]")
     print("")
-    print("Stage A of Mission 02 (Home Sweet Home):")
-    print("  Pass an absolute file path inside /home/student as the first argument.")
-    print("  Tip: In Bash, `~/stage_a.txt` automatically expands to `/home/student/stage_a.txt`!")
-    print("")
-    print("Examples:")
-    print("  /challenge/run ~/stage_a.txt")
-    print("  man run")
+    print("Options:")
+    print("  -v, --verbose        Print extra diagnostic status messages.")
+    print("  -p, --please         Ask nicely to reveal instructions for claiming the flag.")
+    print("  -d, --dry-run        Simulate execution without writing any files.")
+    print("  -h, --help           Display this help message and exit.")
 
 
 def run(ctx: Dict[str, Any]) -> int:
     args = ctx["args"]
-    if not args or args[0] in ("-h", "--help", "help"):
+
+    if args == ["-h"] or args == ["--help"]:
         print_help()
         return 0
 
-    target_arg = args[0]
-    home_dir = Path(ctx["home"]).resolve()
-
-    if not target_arg.startswith("/"):
-        print(
-            f"[-] Error: `{target_arg}` is a relative path.\n"
-            f"    Pass an absolute path inside `{home_dir}` (or use `~/filename`).\n"
-            f"    Run `man run` or `/challenge/run --help` for usage.",
-            file=sys.stderr,
-        )
+    # Case A: Run with no options or invalid/dummy options
+    if args not in (["-p"], ["--please"]):
+        print("[-] Rude. You didn't even ask nicely.")
+        print("[*] Hint: Check my documentation to learn some manners.")
         return 1
 
-    # Drop privileges to student BEFORE touching /home/student (prevents symlink attacks)
+    # Drop privileges to student before checking/writing inside /home/student
     uid = int(ctx["uid"])
     gid = int(ctx["gid"])
     if os.name == "posix" and os.geteuid() == 0 and uid != 0:
         os.setresgid(gid, gid, gid)
         os.setresuid(uid, uid, uid)
 
-    target_path = Path(target_arg)
+    home_dir = Path(ctx["home"]).resolve()
     try:
-        resolved_parent = target_path.parent.resolve(strict=True)
-        resolved_parent.relative_to(home_dir)
+        cwd = Path(ctx["cwd"]).resolve()
     except Exception:
-        print(
-            f"[-] Error: Target path must be inside an existing directory under `{home_dir}`.",
-            file=sys.stderr,
-        )
+        cwd = Path("/")
+
+    # Case B: Run with -p or --please in the WRONG directory (must be a subdirectory inside ~)
+    is_subdir_of_home = False
+    try:
+        rel = cwd.relative_to(home_dir)
+        if len(rel.parts) >= 1:
+            is_subdir_of_home = True
+    except ValueError:
+        is_subdir_of_home = False
+
+    if not is_subdir_of_home:
+        print("[-] Almost! You asked nicely, but I don't feel at home here.")
+        print("[*] Create a directory inside your home folder (~), step inside it, and ask me again.")
         return 1
 
-    if target_path.is_symlink() or target_path.is_dir():
-        print("[-] Error: Target path must be a regular file (not a directory or symlink).", file=sys.stderr)
-        return 1
-
-    phrase = f"CYBERUS-NOTE-{deterministic_token(ctx['student_id'], 'mission02_phrase', 8).upper()}"
-    content = (
-        "=== Cyberus Mission 02: Stage A Complete ===\n"
-        f"Secret Phrase for Stage B: {phrase}\n\n"
-        "Next step (Stage B):\n"
-        "  1. Create the directory ~/notes using `mkdir`\n"
-        "  2. Create ~/notes/plan.txt using `nano` (or another tool) containing the Secret Phrase above.\n"
-        "  3. Run `quest check` to claim your CYBERUS{...} flag!\n"
+    # Case C: Run with -p or --please in the RIGHT directory (~/<folder>)
+    hex8 = deterministic_token(ctx["student_id"], "mission02_phrase", 8).upper()
+    code_str = f"CYBERUS-NOTE-{hex8}"
+    file_content = (
+        "# Instruction: Replace 'CYBERUS' with 'Tofa7aElSafa7a' (case-insensitive) and save the file.\n"
+        f"{code_str}\n"
     )
 
+    code_path = cwd / ".code.txt"
     flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC
     if hasattr(os, "O_NOFOLLOW"):
         flags |= os.O_NOFOLLOW
 
     try:
-        fd = os.open(str(target_path), flags, 0o644)
+        fd = os.open(str(code_path), flags, 0o644)
         try:
-            os.write(fd, content.encode("utf-8"))
+            os.write(fd, file_content.encode("utf-8"))
         finally:
             os.close(fd)
-
-        marker_path = home_dir / ".stage02_a_done"
-        mfd = os.open(str(marker_path), flags, 0o644)
-        try:
-            os.write(mfd, f"{phrase}\n".encode("utf-8"))
-        finally:
-            os.close(mfd)
     except OSError as exc:
-        print(f"[-] Failed to write to `{target_path}`: {exc}", file=sys.stderr)
+        print(f"[-] Failed to write '.code.txt': {exc}", file=sys.stderr)
         return 1
 
-    print(f"[+] Stage A complete! Wrote instructions and secret phrase to `{target_path}`.")
-    print(f"    Read it now with: cat {target_path}")
+    print("[+] Much better! Welcome home.")
+    print("[*] I've stashed a secret code inside a hidden file in your current directory.")
+    print("[*] Find it, read the instructions inside, make the required edit, and save it.")
+    print("[*] Once you're done, run the check command to claim your flag!")
     return 0
