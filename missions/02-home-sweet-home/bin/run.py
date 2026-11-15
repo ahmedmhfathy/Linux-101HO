@@ -85,5 +85,5 @@ def run(ctx: Dict[str, Any]) -> int:
     print("[+] Much better! Welcome home.")
     print("[*] I've stashed a secret code inside a hidden file in your current directory.")
     print("[*] Find it, read the instructions inside, make the required edit, and save it.")
-    print("[*] Once you're done, run the check command to claim your flag!")
+    print("[*] Once you're done, run `quest check` to claim your flag!")
     return 0

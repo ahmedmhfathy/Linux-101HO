@@ -263,6 +263,7 @@ def cmd_killswitch(engine: QuestEngine) -> int:
     state["hints_used"] = {}
     state["initialized_home"] = []
     state["homework_unlocked"] = False
+    state.pop("active_mission", None)
     engine.save_state(state)
     for m in engine.load_missions():
         try:

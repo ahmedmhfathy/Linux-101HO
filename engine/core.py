@@ -377,8 +377,13 @@ class QuestEngine:
         return result
 
     def get_current_mission(self, state: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Return the first incomplete hands-on required mission, or first incomplete unlocked mission."""
+        """Return the active selected mission if valid, otherwise the first incomplete hands-on mission."""
         unlocked = self.get_unlocked_missions(state)
+        unlocked_map = {m["id"]: m for m in unlocked}
+        active_id = state.get("active_mission")
+        if active_id and active_id in unlocked_map:
+            return unlocked_map[active_id]
+
         completed = set(state.get("completed", {}).keys())
         for m in unlocked:
             if not m.get("bonus", False) and not m.get("bug_hunting", False) and m["id"] not in completed:
@@ -521,12 +526,13 @@ class QuestEngine:
         if reset_home or mission["id"] not in initialized_home:
             self.run_setup_phase(mission, state, "home")
             initialized_home.add(mission["id"])
-            with FileLock(self.lock_file):
-                latest = self._load_state_unlocked()
-                latest["initialized_home"] = sorted(
-                    set(latest.get("initialized_home", [])) | initialized_home
-                )
-                self._save_state_unlocked(latest)
+        with FileLock(self.lock_file):
+            latest = self._load_state_unlocked()
+            latest["active_mission"] = mission["id"]
+            latest["initialized_home"] = sorted(
+                set(latest.get("initialized_home", [])) | initialized_home
+            )
+            self._save_state_unlocked(latest)
         return mission
 
     def run_checker(self, mission_id: Optional[str] = None) -> Tuple[bool, str, Dict[str, Any]]:
@@ -638,7 +644,8 @@ class QuestEngine:
             latest = self._load_state_unlocked()
             if mid not in latest["completed"]:
                 latest["completed"][mid] = now_iso
-                self._save_state_unlocked(latest)
+            latest.pop("active_mission", None)
+            self._save_state_unlocked(latest)
 
         # Sync environment so newly unlocked mission sets up its files immediately
         self.sync_active_environment(force_system_for_current=True)
