@@ -30,7 +30,6 @@ RUN rm -f /etc/dpkg/dpkg.cfg.d/excludes && \
     apt-get install -y --no-install-recommends \
         man-db \
         manpages \
-        groff-base \
         less \
         nano \
         tree \
@@ -63,26 +62,24 @@ RUN if id -u ubuntu >/dev/null 2>&1; then userdel -r ubuntu || true; fi && \
 
 # Create directories with strict root ownership and permissions
 RUN mkdir -p /opt/quest/engine /opt/quest/missions /opt/quest/tests \
-             /usr/local/lib/quest /var/lib/quest /challenge /opt/vault \
-             /usr/share/man/man1 /usr/local/share/man/man1
+             /usr/local/lib/quest /var/lib/quest /challenge /opt/vault
 
 COPY --chown=root:root engine/ /opt/quest/engine/
 COPY --chown=root:root missions/ /opt/quest/missions/
 COPY --chown=root:root tests/ /opt/quest/tests/
 COPY --chown=root:root entrypoint.sh /opt/quest/entrypoint.sh
 
-# Install custom man page for `run` and index man-db
-RUN cp -f /opt/quest/missions/02-home-sweet-home/man/run.1 /usr/share/man/man1/run.1 && \
-    cp -f /opt/quest/missions/02-home-sweet-home/man/run.1 /usr/local/share/man/man1/run.1 && \
-    chmod 0644 /usr/share/man/man1/run.1 /usr/local/share/man/man1/run.1 && \
-    mandb -q >/dev/null 2>&1 || true
-
 # Install setuid dispatcher binary
 COPY --from=builder --chown=root:root /src/runas /usr/local/lib/quest/runas
 COPY --from=builder --chown=root:root /src/runas /usr/local/bin/quest
 
-# Normalize permissions recursively (strips 0777/go+w bits inherited from Windows/VM shared folders)
-RUN chown -R root:root /opt/quest /usr/local/lib/quest /challenge /opt/vault /var/lib/quest /usr/local/bin/quest && \
+# Normalize permissions recursively and pre-install custom man page
+RUN mkdir -p /usr/share/man/man1 /usr/local/share/man/man1 && \
+    cp -f /opt/quest/missions/02-home-sweet-home/man/run.1 /usr/share/man/man1/run.1 && \
+    cp -f /opt/quest/missions/02-home-sweet-home/man/run.1 /usr/local/share/man/man1/run.1 && \
+    chmod 0644 /usr/share/man/man1/run.1 /usr/local/share/man/man1/run.1 && \
+    mandb -q >/dev/null 2>&1 || true && \
+    chown -R root:root /opt/quest /usr/local/lib/quest /challenge /opt/vault /var/lib/quest /usr/local/bin/quest && \
     chmod -R go-w /opt/quest /usr/local/lib/quest /challenge /opt/vault /usr/local/bin && \
     chmod 0755 / /usr /usr/local /usr/local/bin /opt /opt/quest /usr/local/lib/quest /challenge /opt/quest/entrypoint.sh && \
     chmod 0700 /opt/quest/engine /opt/quest/missions /opt/quest/tests /var/lib/quest && \
