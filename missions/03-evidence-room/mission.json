@@ -1,0 +1,12 @@
+{
+  "id": "03",
+  "slug": "evidence-room",
+  "part": 2,
+  "category": "Searching & Organizing Files",
+  "title": "The Evidence Room",
+  "kind": "state",
+  "bonus": false,
+  "bug_hunting": false,
+  "story": "Someone left a messy folder called ~/archive/ with hundreds of files inside. Only one of them is the real evidence. Find it, put it where it belongs, and clean up the rest.",
+  "description": "Locate the .evd file inside ~/archive/ containing the exact phrase a3da2_sherket_nvidia_microntech and move it into ~/evidence/ (create the folder if needed).\n\nDelete the ~/archive/decoy_trap directory completely.\n\nFind the researcher handle with the highest numeric score in ~/archive/scores.txt and save that handle inside a new file in ~/evidence/.\n\nRun quest check to claim your flag."
+}

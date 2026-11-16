@@ -6,6 +6,6 @@ set -euo pipefail
 /challenge/run --part2 >> ~/twopart.txt 2>/dev/null
 /challenge/run2 2> ~/stderr_flag.txt > /dev/null
 
-OUT="$(quest check 07)"
+OUT="$(quest check 05)"
 FLAG="$(printf '%s\n' "$OUT" | grep -oE 'CYBERUS\{[^}]+\}' | head -n 1)"
 quest submit "$FLAG"

@@ -70,28 +70,28 @@ test_mission_entry() {
         else
             record_fail "Mission 02: Case B (in ~)" "unexpected: $CASE_B"
         fi
-    elif [[ "$MID" == "05" ]]; then
+    elif [[ "$MID" == "04" ]]; then
         SEALED_OUT="$(run_as_student "sudo cat /opt/vault/flag.txt" 2>&1 || true)"
         if printf '%s\n' "$SEALED_OUT" | grep -q "ACCESS DENIED: The vault is still sealed!"; then
-            record_pass "Mission 05: sudo cat /opt/vault/flag.txt blocked while vault is sealed"
+            record_pass "Mission 04: sudo cat /opt/vault/flag.txt blocked while vault is sealed"
         else
-            record_fail "Mission 05: vault seal check" "unexpected output: $SEALED_OUT"
+            record_fail "Mission 04: vault seal check" "unexpected output: $SEALED_OUT"
         fi
-    elif [[ "$MID" == "07" ]]; then
+    elif [[ "$MID" == "05" ]]; then
         P1_ERR="$(run_as_student "/challenge/run --part1 > ~/twopart.txt" 2>&1)"
         P2_ERR="$(run_as_student "/challenge/run --part2 >> ~/twopart.txt" 2>&1)"
         if [[ "$P1_ERR" == "[stderr] Wrote Part 1 to file." ]] && [[ "$P2_ERR" == "[stderr] Wrote Part 2!" ]]; then
-            record_pass "Mission 07: --part1 and --part2 print clean stderr status without spoilers"
+            record_pass "Mission 05: --part1 and --part2 print clean stderr status without spoilers"
         else
-            record_fail "Mission 07: stderr output check" "got '$P1_ERR' and '$P2_ERR'"
+            record_fail "Mission 05: stderr output check" "got '$P1_ERR' and '$P2_ERR'"
         fi
         run_as_student "rm -f ~/twopart.txt"
-    elif [[ "$MID" == "08" ]]; then
+    elif [[ "$MID" == "06" ]]; then
         ARG_OUT="$(run_as_student "/challenge/checker some_arg" 2>&1 || true)"
         if printf '%s\n' "$ARG_OUT" | grep -q "Interactive keyboard input is not allowed!"; then
-            record_pass "Mission 08: /challenge/checker rejects CLI arguments"
+            record_pass "Mission 06: /challenge/checker rejects CLI arguments"
         else
-            record_fail "Mission 08: /challenge/checker CLI arg rejection" "unexpected: $ARG_OUT"
+            record_fail "Mission 06: /challenge/checker CLI arg rejection" "unexpected: $ARG_OUT"
         fi
     fi
 
@@ -171,15 +171,15 @@ else
     record_pass "SEC-3: /opt/quest/engine unreadable by student"
 fi
 
-# 3. Session Missions Progression (00 -> 01 -> 02 -> 04 -> 05 -> 07 -> 08)
+# 3. Session Missions Progression (00 -> 01 -> 02 -> 03 -> 04 -> 05 -> 06)
 HANDSON_MISSIONS=(
     "00:00-hello-linux:program"
     "01:01-position-thyself:program"
     "02:02-home-sweet-home:state"
-    "04:04-evidence-room:state"
-    "05:05-locked-doors:program"
-    "07:07-redirect-trilogy:state"
-    "08:08-pipe-dream:program"
+    "03:03-evidence-room:state"
+    "04:04-locked-doors:program"
+    "05:05-redirect-trilogy:state"
+    "06:06-pipe-dream:program"
 )
 
 for entry in "${HANDSON_MISSIONS[@]}"; do
@@ -194,12 +194,12 @@ else
     record_pass "SEC-4: symlink escape in ~/myroom/.code.txt refused by checker"
 fi
 
-# 5. Easter Egg Verification (Mission 08 `<` file input redirection)
-run_as_student "quest show 08" >/dev/null
-if run_as_student "PIPE_OUT=\$(/challenge/stage1 | /challenge/stage2 | /challenge/stage3); printf '%s\n' \"\$PIPE_OUT\" | grep -oE 'CYBERUS-PIPE-PASSPHRASE-[A-F0-9]+' > ~/pass08.txt; /challenge/checker < ~/pass08.txt | grep -q 'Nice file redirection!'" ; then
-    record_pass "ALT-08: /challenge/checker prints Easter Egg on < file redirection"
+# 5. Easter Egg Verification (Mission 06 `<` file input redirection)
+run_as_student "quest show 06" >/dev/null
+if run_as_student "PIPE_OUT=\$(/challenge/stage1 | /challenge/stage2 | /challenge/stage3); printf '%s\n' \"\$PIPE_OUT\" | grep -oE 'CYBERUS-PIPE-PASSPHRASE-[A-F0-9]+' > ~/pass06.txt; /challenge/checker < ~/pass06.txt | grep -q 'Nice file redirection!'" ; then
+    record_pass "ALT-06: /challenge/checker prints Easter Egg on < file redirection"
 else
-    record_fail "ALT-08: /challenge/checker Easter Egg on < file redirection" "failed < redirection check"
+    record_fail "ALT-06: /challenge/checker Easter Egg on < file redirection" "failed < redirection check"
 fi
 
 # 6. Export token check
@@ -212,7 +212,7 @@ fi
 # 7. Machine Reset Killswitch Verification (deletes user folders & restores files WITHOUT losing progress)
 run_as_student "mkdir -p ~/my_custom_test_dir && touch ~/my_custom_test_dir/junk.txt"
 run_as_student "reset-machine" >/dev/null
-if run_as_student "test ! -d ~/my_custom_test_dir" && run_as_student "quest status" | grep -q "7/7 completed"; then
+if run_as_student "test ! -d ~/my_custom_test_dir" && run_as_student "quest status" | grep -q "7/7 Completed"; then
     record_pass "RESET-MACHINE: reset-machine deletes user folders and restores files while keeping 7/7 progress"
 else
     record_fail "RESET-MACHINE: reset-machine verification" "either custom dir remained or progress was lost"
@@ -220,7 +220,7 @@ fi
 
 # 8. Full Killswitch Verification (resets all progress back to 00)
 run_as_student "killswitch" >/dev/null
-if run_as_student "quest status" | grep -q "0/7 completed"; then
+if run_as_student "quest status" | grep -q "0/7 Completed"; then
     record_pass "KILLSWITCH: killswitch resets all progress to 0/7"
 else
     record_fail "KILLSWITCH: killswitch resets all progress" "progress was not 0/7"

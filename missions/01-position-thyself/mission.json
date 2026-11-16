@@ -3,15 +3,10 @@
   "slug": "position-thyself",
   "part": 1,
   "category": "Navigation",
-  "title": "Position Thyself",
+  "title": "Right Place, Right Path",
   "kind": "program",
   "bonus": false,
   "bug_hunting": false,
   "story": "There is a program at /challenge/ called run that hands out your first real flag. It’s picky about where you’re standing in the filesystem and how you call it. Listen to what it tells you.",
-  "description": "Execute the program from /var/log using its absolute path.",
-  "hints": [
-    "Listen to what the error message tells you when you run the program.",
-    "Check which directory you are standing in right now and move to /var/log.",
-    "Make sure you call the program using its full path starting with `/`, not `./run`."
-  ]
+  "description": "Execute the program from /var/log using its absolute path."
 }

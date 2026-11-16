@@ -75,7 +75,7 @@ W=$(printf '\033[1;37m')
 D=$(printf '\033[0;90m')
 C=$(printf '\033[0;36m')
 R=$(printf '\033[0m')
-COL=$(printf '\033[63G')
+COL=$(printf '\033[69G')
 
 sed "s|{G}|$G|g; s|{W}|$W|g; s|{D}|$D|g; s|{C}|$C|g; s|{R}|$R|g; s|{COL}|$COL|g" << 'EOF'
 {G}          .-----------.___
@@ -90,13 +90,15 @@ sed "s|{G}|$G|g; s|{W}|$W|g; s|{D}|$D|g; s|{C}|$C|g; s|{R}|$R|g; s|{COL}|$COL|g"
 {G}       '.      '-._______________________..---''
 {G}         '-._______________________..--''{R}
 
-{D}  ╭───────────────────────────────────────────────────────────╮{R}
-{D}  │{R}  {G}🐧 LINUX 101{R}            {D}│{R}   {W}SeeCurity Encapsulated{R} 🐍{COL}{D}│{R}
-{D}  ├───────────────────────────────────────────────────────────┤{R}
-{D}  │{R}  {C}❯{R} {W}quest{R}        {D}:::{R} View active mission briefing{COL}{D}│{R}
-{D}  │{R}  {C}❯{R} {W}quest list{R}   {D}:::{R} Browse all available challenges{COL}{D}│{R}
-{D}  │{R}  {C}❯{R} {W}quest hint{R}   {D}:::{R} Request tactical intel on stuck step{COL}{D}│{R}
-{D}  ╰───────────────────────────────────────────────────────────╯{R}
+{D}  ╭─────────────────────────────────────────────────────────────────╮{R}
+{D}  │{R}  {G}🐧 LINUX 101{R}              {D}│{R}     {W}SeeCurity Encapsulated{R} 🐍{COL}{D}│{R}
+{D}  ├─────────────────────────────────────────────────────────────────┤{R}
+{D}  │{R}  {C}❯{R} {W}quest{R}           {D}:::{R} Show your current challenge{COL}{D}│{R}
+{D}  │{R}  {C}❯{R} {W}quest list{R}      {D}:::{R} List all available challenges{COL}{D}│{R}
+{D}  │{R}  {C}❯{R} {W}quest status{R}    {D}:::{R} View your progress and completed missions{COL}{D}│{R}
+{D}  │{R}  {C}❯{R} {W}reset-machine{R}   {D}:::{R} Reset lab files (keeps your progress){COL}{D}│{R}
+{D}  │{R}  {C}❯{R} {W}killswitch{R}      {D}:::{R} Wipe all progress and restart from 0{COL}{D}│{R}
+{D}  ╰─────────────────────────────────────────────────────────────────╯{R}
 EOF
 BANNER_EOF
 chown root:root /usr/local/bin/cyberus-banner

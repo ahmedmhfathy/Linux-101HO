@@ -7,12 +7,7 @@
   "kind": "state",
   "bonus": false,
   "bug_hunting": false,
-  "intro": "In Linux, commands often accept options (also called flags) that modify how a program behaves. They are typed after the command name and usually start with a single dash for short names (like -v) or a double dash for full words (like --version). Most command-line programs include a built-in option that prints out usage instructions and lists every flag the program supports",
+  "intro": "In Linux, commands often accept options (also called flags) that modify how a program behaves. They are typed after the command name and usually start with a single dash for short names (like -v) or a double dash for full words (like --version). Most command-line programs include a built-in option that prints out usage instructions and lists every flag the program supports.",
   "story": "/challenge/run can give you the flag, but only if you ask nicely and do what it tells you to do.",
-  "description": "Check /challenge/run's documentation to find the option for asking nicely.\nRun the program with that option and follow the instructions it gives you.",
-  "hints": [
-    "Check the program's manual page or built-in help option to see what flags it accepts.",
-    "Make sure you create a folder inside your home directory (`~`), move inside that folder, and run `/challenge/run` with the polite option.",
-    "List hidden files in your folder, open `.code.txt`, follow the instruction comment inside it, save, and run `quest check`."
-  ]
+  "description": "Check /challenge/run's documentation to find the option for asking nicely.\nRun the program with that option and follow the instructions it gives you."
 }

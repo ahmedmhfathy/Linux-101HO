@@ -1,0 +1,12 @@
+{
+  "id": "04",
+  "slug": "locked-doors",
+  "part": 2,
+  "category": "Permissions & Privileges",
+  "title": "Locked Doors",
+  "kind": "program",
+  "bonus": false,
+  "bug_hunting": false,
+  "story": "Two locked doors stand between you and a vault. Each one is jammed by its file permissions. Fix them one by one.",
+  "description": "Door 1: ~/doors/door1.txt has a passcode, but you can’t read it. Make it readable.\n\nDoor 2: ~/doors/door2.key is too open. Change its permissions so they read exactly rw-r-----.\n\nThe Lock: ~/doors/unlock.sh won’t run. Make it runnable, then run it.\n\nThe Vault: /opt/vault/flag.txt belongs to root—you need super powers to read the flag inside it."
+}

@@ -2,6 +2,7 @@
 """Command-line interface for Cyberus Linux Quest (`quest`)."""
 
 import os
+import re
 import shutil
 import stat
 import sys
@@ -26,17 +27,60 @@ from engine.core import (  # noqa: E402
 
 # ANSI Colors
 CYAN = "\033[1;36m"
+CYAN_NORMAL = "\033[0;36m"
 GREEN = "\033[1;32m"
 YELLOW = "\033[1;33m"
 RED = "\033[1;31m"
-MAGENTA = "\033[1;35m"
+WHITE = "\033[1;37m"
+GRAY = "\033[0;90m"
 BOLD = "\033[1m"
 DIM = "\033[2m"
 RESET = "\033[0m"
 
+BOX_INNER_WIDTH = 65
+RIGHT_BORDER_COL = 3 + BOX_INNER_WIDTH + 1  # Column 69
 
-def format_mission_text(text: str, student_id: str) -> str:
-    """Substitute dynamic per-student placeholders and wrap lines cleanly on word boundaries."""
+HIGHLIGHT_PATTERNS = re.compile(
+    r"(`[^`]+`"
+    r"|CYBERUS\{[^}]+\}"
+    r"|a3da2_sherket_nvidia_microntech"
+    r"|rw-r-----"
+    r"|(?<![A-Za-z0-9_])(?:~/[A-Za-z0-9_./-]*|/[A-Za-z0-9_./-]+|\.evd|\.code\.txt|quest check|quest submit|quest list|quest status|reset-machine|killswitch)(?![A-Za-z0-9_]))"
+)
+
+
+def print_header_box(left_title: str, right_plain: str = "", right_colored: str = "") -> None:
+    """Render the rounded top header box matching the Cyberus Linux 101 UI."""
+    top = f"{GRAY}  ╭{'─' * BOX_INNER_WIDTH}╮{RESET}"
+    bot = f"{GRAY}  ╰{'─' * BOX_INNER_WIDTH}╯{RESET}"
+    col_end = f"\033[{RIGHT_BORDER_COL}G"
+    if right_plain:
+        right_col_pos = max(30, RIGHT_BORDER_COL - 2 - len(right_plain))
+        right_part = f"\033[{right_col_pos}G{right_colored}"
+    else:
+        right_part = ""
+    mid = (
+        f"{GRAY}  │{RESET}  {YELLOW}🐧 LINUX 101{RESET}  {GRAY}│{RESET}  "
+        f"{WHITE}{left_title}{RESET}{right_part}{col_end}{GRAY}│{RESET}"
+    )
+    print(top)
+    print(mid)
+    print(bot)
+
+
+def highlight_inline(text: str) -> str:
+    """Highlight inline paths, commands, and tokens in Bold Cyan/White."""
+    def _repl(match: re.Match[str]) -> str:
+        token = match.group(0)
+        if token.startswith("`") and token.endswith("`"):
+            token = token[1:-1]
+        return f"{CYAN}{token}{RESET}"
+
+    return HIGHLIGHT_PATTERNS.sub(_repl, text)
+
+
+def format_indented_block(text: str, student_id: str, highlight: bool = True) -> str:
+    """Substitute dynamic placeholders, wrap at ~66 cols with 2-space indent, and optionally highlight."""
     dirs_01 = ["/var/log"]
     req_dir_01 = deterministic_choice(student_id, "mission01_dir", dirs_01)
     phrase_02 = f"CYBERUS-NOTE-{deterministic_token(student_id, 'mission02_phrase', 8).upper()}"
@@ -44,26 +88,22 @@ def format_mission_text(text: str, student_id: str) -> str:
         text.replace("{MISSION01_DIR}", req_dir_01)
         .replace("{MISSION02_PHRASE}", phrase_02)
     )
-    wrapped_lines: List[str] = []
-    for line in rendered.splitlines():
-        if not line.strip():
-            wrapped_lines.append("")
-        else:
-            wrapped_lines.append(
-                textwrap.fill(
-                    line,
-                    width=76,
-                    break_long_words=False,
-                    break_on_hyphens=False,
-                )
-            )
-    return "\n".join(wrapped_lines)
-
-
-def print_banner() -> None:
-    print(f"{CYAN}============================================================{RESET}")
-    print(f"{BOLD}{CYAN}   CYBERUS LINUX QUEST  {RESET}{DIM}(v{ENGINE_VERSION} - Bug Hunting Lab){RESET}")
-    print(f"{CYAN}============================================================{RESET}")
+    out_lines: List[str] = []
+    for raw_line in rendered.splitlines():
+        stripped = raw_line.strip()
+        if not stripped:
+            out_lines.append("")
+            continue
+        wrapped = textwrap.wrap(
+            stripped,
+            width=66,
+            break_long_words=False,
+            break_on_hyphens=False,
+        )
+        for wline in wrapped:
+            formatted = highlight_inline(wline) if highlight else wline
+            out_lines.append(f"  {formatted}")
+    return "\n".join(out_lines)
 
 
 def cmd_show(engine: QuestEngine, mission_id: Optional[str] = None) -> int:
@@ -73,18 +113,8 @@ def cmd_show(engine: QuestEngine, mission_id: Optional[str] = None) -> int:
         if mission is None:
             print(f"{RED}[!] Unknown mission '{mission_id}'. Run `quest list`.{RESET}")
             return 1
-        unlocked_ids = {m["id"] for m in engine.get_unlocked_missions(state)}
-        if mission["id"] not in unlocked_ids:
-            if mission.get("bug_hunting") or mission.get("bonus"):
-                print(
-                    f"{YELLOW}[!] Mission {mission['id']} ({mission['title']}) is locked for at-home practice.{RESET}"
-                )
-            else:
-                print(
-                    f"{YELLOW}[!] Mission {mission['id']} is locked. Complete earlier missions first.{RESET}"
-                )
-            return 1
         engine.activate_mission(mission["id"], reset_home=False)
+        state = engine.load_state()
     else:
         engine.sync_active_environment(force_system_for_current=True)
         state = engine.load_state()
@@ -96,79 +126,85 @@ def cmd_show(engine: QuestEngine, mission_id: Optional[str] = None) -> int:
 
     mid = mission["id"]
     is_done = mid in state.get("completed", {})
-    status_badge = f"{GREEN}[COMPLETED]{RESET}" if is_done else f"{YELLOW}[IN PROGRESS]{RESET}"
-    tag = ""
-    if mission.get("bonus"):
-        tag = f" {MAGENTA}[BONUS]{RESET}"
-    elif mission.get("bug_hunting"):
-        tag = f" {RED}[BUG HUNTING]{RESET}"
+    if is_done:
+        badge_plain = "[COMPLETED]"
+        badge_colored = f"{GREEN}[COMPLETED]{RESET}"
+    else:
+        badge_plain = "[IN PROGRESS]"
+        badge_colored = f"{YELLOW}[IN PROGRESS]{RESET}"
 
     student_id = state["student_id"]
-    intro = format_mission_text(mission.get("intro", ""), student_id)
-    story = format_mission_text(mission.get("story", ""), student_id)
-    desc = format_mission_text(
-        mission.get("description", mission.get("objective", "")), student_id
-    )
     part_num = int(mission.get("part", 0))
     default_cat = "Warm-Up" if part_num == 0 else f"Part {part_num}"
     category_label = mission.get("category", default_cat)
 
-    print_banner()
-    print(f"{BOLD}{CYAN}{category_label}{RESET}")
-    print(f"{BOLD}Mission {mid} – {mission['title']}{RESET}{tag}  {status_badge}")
-    print("-" * 60)
-    if intro:
-        print(f"{intro}\n")
-    print(f"{BOLD}Story:{RESET}\n{story}\n")
-    print(f"{BOLD}Description:{RESET}\n{desc}\n")
-    print("-" * 60)
-    if mission.get("kind") == "state":
-        print(f"When ready, verify with: `{CYAN}quest check{RESET}`  |  Submit flag: `{CYAN}quest submit {FLAG_PREFIX}{{...}}{RESET}`")
+    intro_raw = mission.get("intro", "").strip()
+    story_raw = mission.get("story", "").strip()
+    if intro_raw:
+        full_story_raw = f"{intro_raw}\n\n{story_raw}"
     else:
-        print(f"Submit flag: `{CYAN}quest submit {FLAG_PREFIX}{{...}}{RESET}`")
-    print(f"Need help? `{CYAN}quest hint{RESET}`  |  All missions: `{CYAN}quest list{RESET}`")
-    print(f"Reset machine files (keep progress): `{CYAN}reset-machine{RESET}`  |  Wipe all progress: `{CYAN}killswitch{RESET}`")
+        full_story_raw = story_raw
+
+    story_block = format_indented_block(full_story_raw, student_id, highlight=True)
+    desc_raw = mission.get("description", mission.get("objective", "")).strip()
+    desc_block = format_indented_block(desc_raw, student_id, highlight=True)
+
+    print()
+    print_header_box(category_label, badge_plain, badge_colored)
+    print(f"\n  {WHITE}Mission {mid} – {mission['title']}{RESET}\n")
+    print(f"  {WHITE}STORY{RESET}")
+    print(f"{story_block}\n")
+    print(f"  {WHITE}OBJECTIVE{RESET}")
+    print(f"{desc_block}\n")
+    print(f"{GRAY}  {'─' * (BOX_INNER_WIDTH + 2)}{RESET}")
+    if mission.get("kind") == "state":
+        print(f"  {CYAN_NORMAL}❯{RESET} Verify progress:  {WHITE}quest check{RESET}")
+    print(f"  {CYAN_NORMAL}❯{RESET} Submit flag:      {WHITE}quest submit {FLAG_PREFIX}{{...}}{RESET}")
+    print(f"  {CYAN_NORMAL}❯{RESET} All challenges:   {WHITE}quest list{RESET}")
+    print(f"  {CYAN_NORMAL}❯{RESET} Check progress:   {WHITE}quest status{RESET}")
+    print()
     return 0
 
 
 def cmd_list(engine: QuestEngine) -> int:
     state = engine.load_state()
     missions = engine.load_missions()
-    unlocked_ids = {m["id"] for m in engine.get_unlocked_missions(state)}
     completed = state.get("completed", {})
     current = engine.get_current_mission(state)
     current_id = current["id"] if current else None
 
-    print_banner()
+    done_count = sum(1 for m in missions if m["id"] in completed)
+    total_count = len(missions)
+    right_plain = f"{done_count}/{total_count} Completed"
+    right_colored = f"{WHITE}{right_plain}{RESET}"
+
+    print()
+    print_header_box("All Challenges", right_plain, right_colored)
+
     current_part = -1
     for m in missions:
         part = int(m.get("part", 0))
         if part != current_part:
             current_part = part
             part_title = "Warm-Up" if part == 0 else f"Part {part}"
-            print(f"\n{BOLD}{CYAN}--- {part_title} ---{RESET}")
+            print(f"\n  {BOLD}{CYAN}--- {part_title} ---{RESET}")
 
         mid = m["id"]
         if mid in completed:
             status = f"{GREEN}[DONE]  {RESET}"
         elif mid == current_id:
             status = f"{YELLOW}[ACTIVE]{RESET}"
-        elif mid in unlocked_ids:
-            status = f"{CYAN}[OPEN]  {RESET}"
         else:
-            status = f"{DIM}[LOCKED]{RESET}"
+            status = f"{CYAN}[OPEN]  {RESET}"
 
-        badges: List[str] = []
-        if m.get("bug_hunting"):
-            badges.append(f"{RED}[BugHunt - Home Task]{RESET}")
-        if m.get("bonus"):
-            badges.append(f"{MAGENTA}[Bonus - Home Task]{RESET}")
-        badge_str = (" " + " ".join(badges)) if badges else ""
         cat = m.get("category", "")
         cat_str = f" {DIM}({cat}){RESET}" if cat else ""
-        print(f"  {status}  {BOLD}{mid:<3}{RESET} {m['title']}{cat_str}{badge_str}")
+        print(f"    {status}  {BOLD}{mid:<3}{RESET} {m['title']}{cat_str}")
 
-    print(f"\nTip: Run `{CYAN}quest show <ID>{RESET}` to switch to any `[OPEN]` or `[DONE]` mission.")
+    print(f"\n{GRAY}  {'─' * (BOX_INNER_WIDTH + 2)}{RESET}")
+    print(f"  {CYAN_NORMAL}❯{RESET} View challenge:   {WHITE}quest show <ID>{RESET}")
+    print(f"  {CYAN_NORMAL}❯{RESET} Check progress:   {WHITE}quest status{RESET}")
+    print()
     return 0
 
 
@@ -176,51 +212,50 @@ def cmd_status(engine: QuestEngine) -> int:
     state = engine.load_state()
     missions = engine.load_missions()
     completed = state.get("completed", {})
+
     done_count = sum(1 for m in missions if m["id"] in completed)
-    hints_total = sum(int(v) for v in state.get("hints_used", {}).values())
+    total_count = len(missions)
+    pct = int(round((done_count / total_count) * 100)) if total_count else 0
+    bar_width = 20
+    filled = int(round((done_count / total_count) * bar_width)) if total_count else 0
+    filled = max(0, min(bar_width, filled))
+    if done_count > 0 and filled == 0:
+        filled = 1
+    bar_str = f"{WHITE}{'█' * filled}{GRAY}{'░' * (bar_width - filled)}{RESET}"
 
-    print_banner()
-    print(f"  {BOLD}Student ID     :{RESET} {state['student_id']}")
-    print(f"  {BOLD}Lab Version    :{RESET} {state.get('version', ENGINE_VERSION)}")
-    print(f"  {BOLD}Quests Done    :{RESET} {done_count}/{len(missions)} completed")
-    print(f"  {BOLD}Hints Used     :{RESET} {hints_total}")
+    right_plain = f"{done_count}/{total_count} Completed"
+    right_colored = f"{WHITE}{right_plain}{RESET}"
 
+    print()
+    print_header_box("Mission Status", right_plain, right_colored)
+    print(f"\n  {WHITE}PROGRESS{RESET}")
+    print(f"  [{bar_str}] {WHITE}{pct}%{RESET}  ({done_count} of {total_count} solved)\n")
+
+    print(f"  {WHITE}ACTIVE MISSION{RESET}")
     current = engine.get_current_mission(state)
     if current and current["id"] not in completed:
-        print(f"  {BOLD}Current        :{RESET} [{current['id']}] {current['title']}")
+        cat = current.get("category", "")
+        cat_part = f"  ({cat})" if cat else ""
+        print(f"  {CYAN_NORMAL}❯{RESET} [{current['id']}] {WHITE}{current['title']}{RESET}{cat_part}\n")
+    elif current:
+        cat = current.get("category", "")
+        cat_part = f"  ({cat})" if cat else ""
+        print(f"  {GREEN}✔{RESET} All missions completed! (Last: [{current['id']}] {current['title']}{cat_part})\n")
     else:
-        print(f"  {BOLD}Current        :{RESET} {GREEN}All unlocked missions complete!{RESET}")
-    return 0
+        print(f"  {GREEN}✔ All missions completed!{RESET}\n")
 
+    print(f"  {WHITE}COMPLETED MISSIONS{RESET}")
+    completed_missions = [m for m in missions if m["id"] in completed]
+    if completed_missions:
+        for m in completed_missions:
+            print(f"  {GREEN}✔{RESET} [{m['id']}] {m['title']}")
+    else:
+        print(f"  {GRAY}None yet — run `quest` to start Mission 00!{RESET}")
 
-def cmd_hint(engine: QuestEngine, mission_id: Optional[str] = None) -> int:
-    state = engine.load_state()
-    mission = engine.get_mission(mission_id) if mission_id else engine.get_current_mission(state)
-    if mission is None:
-        print(f"{RED}[!] Unknown mission.{RESET}")
-        return 1
-
-    unlocked_ids = {m["id"] for m in engine.get_unlocked_missions(state)}
-    if mission["id"] not in unlocked_ids:
-        print(f"{YELLOW}[!] Mission {mission['id']} is locked.{RESET}")
-        return 1
-
-    hints = mission.get("hints", [])
-    if not hints:
-        print("No hints available for this mission.")
-        return 0
-
-    mid = mission["id"]
-    used = int(state.get("hints_used", {}).get(mid, 0))
-    next_tier = min(used + 1, len(hints))
-    state.setdefault("hints_used", {})[mid] = next_tier
-    engine.save_state(state)
-
-    print(f"{BOLD}Hints for Mission {mid} ({mission['title']}):{RESET}")
-    for idx in range(next_tier):
-        print(f"  {YELLOW}[Hint {idx + 1}/{len(hints)}]{RESET} {hints[idx]}")
-    if next_tier < len(hints):
-        print(f"{DIM}Run `quest hint {mid}` again for the next hint ({next_tier}/{len(hints)} shown).{RESET}")
+    print(f"\n{GRAY}  {'─' * (BOX_INNER_WIDTH + 2)}{RESET}")
+    print(f"  {CYAN_NORMAL}❯{RESET} Resume active:    {WHITE}quest{RESET}")
+    print(f"  {CYAN_NORMAL}❯{RESET} All challenges:   {WHITE}quest list{RESET}")
+    print()
     return 0
 
 
@@ -239,11 +274,6 @@ def cmd_check(engine: QuestEngine, mission_id: Optional[str] = None) -> int:
     target_mission = engine.get_mission(mission_id) if mission_id else engine.get_current_mission(state)
     if target_mission is None:
         print(f"{RED}[!] Mission not found.{RESET}")
-        return 1
-
-    unlocked_ids = {m["id"] for m in engine.get_unlocked_missions(state)}
-    if target_mission["id"] not in unlocked_ids:
-        print(f"{YELLOW}[!] Mission {target_mission['id']} is locked.{RESET}")
         return 1
 
     ok, msg, mission = engine.run_checker(target_mission["id"])
@@ -317,7 +347,7 @@ def cmd_killswitch(engine: QuestEngine, args: Optional[List[str]] = None) -> int
 
 
 def cmd_internal_unseal_vault(engine: QuestEngine, args: List[str]) -> int:
-    """Validate Mission 05 Door 1, Door 2, unlock.sh, and passcode, then unseal /opt/vault/flag.txt."""
+    """Validate Mission 04 Door 1, Door 2, unlock.sh, and passcode, then unseal /opt/vault/flag.txt."""
     state = engine.load_state()
     doors_dir = engine.home_dir / "doors"
     door1 = doors_dir / "door1.txt"
@@ -325,7 +355,7 @@ def cmd_internal_unseal_vault(engine: QuestEngine, args: List[str]) -> int:
     unlock_sh = doors_dir / "unlock.sh"
 
     if not door1.is_file() or door1.is_symlink():
-        print("[-] ~/doors/door1.txt is missing! Run `quest reset 05`.", file=sys.stderr)
+        print("[-] ~/doors/door1.txt is missing! Run `quest reset 04`.", file=sys.stderr)
         return 1
     m1 = stat.S_IMODE(door1.lstat().st_mode)
     if not (m1 & stat.S_IRUSR):
@@ -333,7 +363,7 @@ def cmd_internal_unseal_vault(engine: QuestEngine, args: List[str]) -> int:
         return 1
 
     if not door2.is_file() or door2.is_symlink():
-        print("[-] ~/doors/door2.key is missing! Run `quest reset 05`.", file=sys.stderr)
+        print("[-] ~/doors/door2.key is missing! Run `quest reset 04`.", file=sys.stderr)
         return 1
     m2 = stat.S_IMODE(door2.lstat().st_mode)
     if m2 != 0o640:
@@ -345,7 +375,7 @@ def cmd_internal_unseal_vault(engine: QuestEngine, args: List[str]) -> int:
         return 1
 
     if not unlock_sh.is_file() or unlock_sh.is_symlink():
-        print("[-] ~/doors/unlock.sh is missing! Run `quest reset 05`.", file=sys.stderr)
+        print("[-] ~/doors/unlock.sh is missing! Run `quest reset 04`.", file=sys.stderr)
         return 1
     m_unlock = stat.S_IMODE(unlock_sh.lstat().st_mode)
     if not (m_unlock & stat.S_IXUSR):
@@ -361,7 +391,7 @@ def cmd_internal_unseal_vault(engine: QuestEngine, args: List[str]) -> int:
         print("[-] Invalid passcode! Read ~/doors/door1.txt to get the Door 1 PASSCODE.", file=sys.stderr)
         return 1
 
-    flag = engine.get_flag("05", state)
+    flag = engine.get_flag("04", state)
     vault_dir = Path("/opt/vault")
     vault_dir.mkdir(parents=True, exist_ok=True)
     vault_text = (
@@ -377,12 +407,12 @@ def cmd_internal_unseal_vault(engine: QuestEngine, args: List[str]) -> int:
     state["m05_vault_unsealed"] = True
     engine.save_state(state)
     print("[+] Door 1 and Door 2 verified!")
-    print("[+] The Vault (/opt/vault/flag.txt) is now UNSEALED. Use superuser powers (sudo) to read it!")
+    print("[+] The Vault (/opt/vault/flag.txt) is now UNSEALED. Use super powers (sudo) to read it!")
     return 0
 
 
 def cmd_internal_check_vault(engine: QuestEngine) -> int:
-    """Verify whether Mission 05 doors and unlock.sh have unsealed the vault."""
+    """Verify whether Mission 04 doors and unlock.sh have unsealed the vault."""
     state = engine.load_state()
     doors_dir = engine.home_dir / "doors"
     door1 = doors_dir / "door1.txt"
@@ -403,7 +433,7 @@ def cmd_internal_check_vault(engine: QuestEngine) -> int:
         print("[*] Unlock Door 1 and Door 2 using ~/doors/unlock.sh first.")
         return 1
 
-    flag = engine.get_flag("05", state)
+    flag = engine.get_flag("04", state)
     print(f"[+] VAULT UNLOCKED!\nFlag: {flag}\nSubmit your flag with: quest submit {flag}")
     return 0
 
@@ -430,31 +460,15 @@ def cmd_reset(engine: QuestEngine, args: List[str]) -> int:
         print(f"{RED}[!] Unknown mission.{RESET}")
         return 1
 
-    unlocked_ids = {m["id"] for m in engine.get_unlocked_missions(state)}
-    if mission["id"] not in unlocked_ids:
-        print(f"{YELLOW}[!] Mission {mission['id']} is locked.{RESET}")
-        return 1
-
     engine.activate_mission(mission["id"], reset_home=True)
     print(f"{GREEN}[+] Mission {mission['id']} ({mission['title']}) files have been restored.{RESET}")
     return 0
 
 
-def cmd_unlock_homework(engine: QuestEngine, lock: bool = False) -> int:
-    state = engine.load_state()
-    state["homework_unlocked"] = not lock
-    engine.save_state(state)
-    engine.sync_active_environment(force_system_for_current=True)
-    if lock:
-        print(f"{YELLOW}[+] Bug Hunting & Bonus home-task missions are now LOCKED.{RESET}")
-    else:
-        print(f"{GREEN}[+] Bug Hunting & Bonus home-task missions are now UNLOCKED for unlocked parts.{RESET}")
-    return 0
-
-
 def cmd_doctor(engine: QuestEngine) -> int:
-    print_banner()
-    print(f"{BOLD}Running Cyberus Linux Quest diagnostics...{RESET}")
+    print()
+    print_header_box("System Diagnostics", f"v{ENGINE_VERSION}", f"{WHITE}v{ENGINE_VERSION}{RESET}")
+    print(f"\n  {BOLD}Running Cyberus Linux Quest diagnostics...{RESET}")
     issues: List[str] = []
 
     required_bins = ["bash", "man", "less", "nano", "tree", "find", "grep", "sort", "sudo", "python3"]
@@ -531,8 +545,6 @@ def main(argv: Optional[List[str]] = None) -> int:
             return cmd_list(engine)
         if sub == "status":
             return cmd_status(engine)
-        if sub == "hint":
-            return cmd_hint(engine, rest[0] if rest else None)
         if sub == "submit":
             return cmd_submit(engine, rest[0] if rest else None)
         if sub == "check":
@@ -543,29 +555,24 @@ def main(argv: Optional[List[str]] = None) -> int:
             return cmd_reset_machine(engine)
         if sub == "reset":
             return cmd_reset(engine, rest)
-        if sub == "unlock-homework":
-            return cmd_unlock_homework(engine, lock=False)
-        if sub == "lock-homework":
-            return cmd_unlock_homework(engine, lock=True)
         if sub == "doctor":
             return cmd_doctor(engine)
         if sub == "export":
             return cmd_export(engine)
         if sub in ("-h", "--help", "help"):
-            print_banner()
-            print("Usage:")
-            print("  quest                        Show current mission")
-            print("  quest show [id]              Show (and activate) an unlocked mission")
-            print("  quest list                   List all missions and their status")
-            print("  quest status                 Show overall progress and student ID")
-            print("  quest hint [id]              Reveal the next hint tier (up to 3)")
-            print(f"  quest submit {FLAG_PREFIX}{{...}}    Submit a captured flag")
-            print("  quest check [id]             Validate mission state and reveal flag")
-            print("  quest reset [id|--all]       Restore current/specific mission files")
-            print("  quest reset-machine          Reset all machine files/folders WITHOUT losing progress")
-            print("  quest killswitch             Immediately wipe all progress and reset all files")
-            print("  quest doctor                 Run environment health check")
-            print("  quest export                 Print signed progress token for instructor")
+            print()
+            print_header_box("Command Reference", f"v{ENGINE_VERSION}", f"{WHITE}v{ENGINE_VERSION}{RESET}")
+            print("\n  Usage:")
+            print("    quest                        Show current challenge")
+            print("    quest show [id]              Show (and activate) a challenge")
+            print("    quest list                   List all available challenges")
+            print("    quest status                 View your progress and completed missions")
+            print(f"    quest submit {FLAG_PREFIX}{{...}}    Submit a captured flag")
+            print("    quest check [id]             Validate mission state and reveal flag")
+            print("    reset-machine                Reset lab files (keeps your progress)")
+            print("    killswitch                   Wipe all progress and restart from 0")
+            print("    quest doctor                 Run environment health check")
+            print("    quest export                 Print signed progress token for instructor\n")
             return 0
 
         if engine.get_mission(sub) is not None:

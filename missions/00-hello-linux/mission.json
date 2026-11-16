@@ -8,10 +8,5 @@
   "bonus": false,
   "bug_hunting": false,
   "story": "Welcome to the Cyberus Linux Quest lab! Let's learn how to submit your first flag.",
-  "description": "Submit the warm-up flag `CYBERUS{hello_linux}` using `quest submit`.",
-  "hints": [
-    "Type `quest submit CYBERUS{hello_linux}` in your terminal.",
-    "Flags always use the format CYBERUS{...}.",
-    "Run: quest submit CYBERUS{hello_linux}"
-  ]
+  "description": "Submit the warm-up flag CYBERUS{hello_linux_world} using quest submit."
 }

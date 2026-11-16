@@ -23,7 +23,26 @@ except ImportError:
 
 ENGINE_VERSION = "1.0.0"
 FLAG_PREFIX = "CYBERUS"
-WARMUP_FLAG = f"{FLAG_PREFIX}{{hello_linux}}"
+WARMUP_FLAG = f"{FLAG_PREFIX}{{hello_linux_world}}"
+
+MISSION_FLAG_PHRASES: Dict[str, str] = {
+    "00": "hello_linux_world",
+    "01": "absolute_path_master",
+    "02": "manners_maketh_the_hacker",
+    "03": "clean_sweep_no_trace_left",
+    "04": "chmod_640_and_say_please",
+    "05": "signal_over_stderr_noise",
+    "06": "pipeline_pro_no_keyboard",
+}
+
+LEET_MAP: Dict[str, str] = {
+    "a": "4",
+    "e": "3",
+    "i": "1",
+    "o": "0",
+    "s": "5",
+    "t": "7",
+}
 
 STUDENT_USER = "member"
 STUDENT_GROUP = "bug"
@@ -165,12 +184,36 @@ class CheckContext:
 
 
 def compute_flag(secret: str, student_id: str, mission_id: str) -> str:
-    """Deterministically compute per-student HMAC flag in CYBERUS{} format."""
+    """Deterministically compute per-student dynamic leet-speak flag in CYBERUS{} format."""
     if mission_id == "00":
         return WARMUP_FLAG
+
+    base_phrase = MISSION_FLAG_PHRASES.get(mission_id, f"mission_{mission_id}_flag")
     msg = f"{student_id}:{mission_id}".encode("utf-8")
-    digest = hmac.new(secret.encode("utf-8"), msg, hashlib.sha256).hexdigest()[:12]
-    return f"{FLAG_PREFIX}{{{mission_id}_{digest}}}"
+    digest = hmac.new(secret.encode("utf-8"), msg, hashlib.sha256).digest()
+
+    chars = list(base_phrase)
+    sub_positions = [idx for idx, ch in enumerate(chars) if ch.lower() in LEET_MAP]
+
+    if sub_positions:
+        chosen = set()
+        for bit_idx, pos in enumerate(sub_positions):
+            byte_val = digest[bit_idx % len(digest)]
+            if (byte_val >> (bit_idx % 8)) & 1:
+                chosen.add(pos)
+
+        # Ensure at least half of substitutable letters become leet numbers so it's always dynamic
+        min_subs = max(3, (len(sub_positions) + 1) // 2)
+        cursor = 0
+        while len(chosen) < min_subs and cursor < len(sub_positions) * 2:
+            pick = sub_positions[(digest[cursor % len(digest)] + cursor) % len(sub_positions)]
+            chosen.add(pick)
+            cursor += 1
+
+        for pos in chosen:
+            chars[pos] = LEET_MAP[chars[pos].lower()]
+
+    return f"{FLAG_PREFIX}{{{''.join(chars)}}}"
 
 
 def verify_flag(expected_flag: str, submitted_flag: str) -> bool:
@@ -312,15 +355,9 @@ class QuestEngine:
             "01": 10,
             "02": 20,
             "03": 30,
-            "B1": 35,
             "04": 40,
             "05": 50,
             "06": 60,
-            "B2": 65,
-            "07": 70,
-            "08": 80,
-            "09": 90,
-            "B3": 95,
         }
         missions.sort(key=lambda m: (order_map.get(m["id"], 999), m["id"]))
         return missions
@@ -499,7 +536,7 @@ class QuestEngine:
         for m in unlocked:
             mid = m["id"]
             is_current = current is not None and current["id"] == mid
-            if is_current or m.get("bonus", False) or mid in ("05", "06"):
+            if is_current or m.get("bonus", False) or mid in ("04",):
                 self.run_setup_phase(m, state, "system")
 
             if (is_current or m.get("bonus", False)) and mid not in initialized_home:
@@ -533,7 +570,7 @@ class QuestEngine:
         if mission["id"] not in unlocked_ids:
             raise QuestError(f"Mission {mission['id']} is still locked. Complete earlier missions first!")
 
-        if reset_home and mission["id"] == "05":
+        if reset_home and mission["id"] == "04":
             with FileLock(self.lock_file):
                 latest_tmp = self._load_state_unlocked()
                 latest_tmp.pop("m05_vault_unsealed", None)

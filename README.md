@@ -5,33 +5,33 @@ An interactive, Docker-based Linux hands-on lab featuring progressive command-li
 ## Challenges Overview
 
 ### Warm-Up
-- **Mission `00` – Hello, Linux**: Getting started with the `quest` CLI and submitting your first `CYBERUS{...}` flag.
+- **Mission `00` – Hello, Linux (`Warm-Up`)**: Getting started with the `quest` CLI and submitting your first `CYBERUS{...}` flag.
 
 ### Part 1 – Navigation & Working with Files
-- **Mission `01` – Position Thyself (`Navigation`)**: Navigating the Linux filesystem and executing programs from specific directories.
+- **Mission `01` – Right Place, Right Path (`Navigation`)**: Navigating the Linux filesystem and executing programs from specific directories.
 - **Mission `02` – Home Sweet Home (`Working with Files`)**: Reading program documentation, working with directories and hidden files, and editing text files in the terminal.
 
 ### Part 2 – Searching, Organizing & Permissions
-- **Mission `04` – The Evidence Room (`Searching & Organizing Files`)**: Searching through a large directory archive, organizing files, and cleaning up decoy directories.
-- **Mission `05` – Locked Doors (`Permissions & Privileges`)**: Inspecting and modifying file permissions and using elevated privileges to access restricted files.
+- **Mission `03` – The Evidence Room (`Searching & Organizing Files`)**: Searching through a large directory archive, organizing files, and cleaning up decoy directories.
+- **Mission `04` – Locked Doors (`Permissions & Privileges`)**: Inspecting and modifying file permissions and using elevated privileges to access restricted files.
 
 ### Part 3 – Redirection & Pipelines
-- **Mission `07` – Redirect Trilogy (`Input & Output Redirection`)**: Controlling standard output (`stdout`) and standard error (`stderr`) streams across three stages.
-- **Mission `08` – Pipe Dream (`Pipelines & Standard Input`)**: Chaining multiple programs together in an assembly line and feeding data into standard input (`stdin`).
+- **Mission `05` – Redirect Trilogy (`Input & Output Redirection`)**: Controlling standard output (`stdout`) and standard error (`stderr`) streams across three stages.
+- **Mission `06` – Pipe Dream (`Pipelines & Standard Input`)**: Chaining multiple programs together in an assembly line and feeding data into standard input (`stdin`).
 
 ---
 
 ## Lab Commands Inside the Container
 
 ```bash
-quest                        # View your current mission
-quest list                   # List all missions and their status
-quest show <ID>              # Switch to an unlocked mission
-quest hint                   # View a hint for the current mission
+quest                        # Show your current challenge
+quest list                   # List all available challenges
+quest show <ID>              # Switch to a challenge
+quest status                 # View your progress and completed missions
 quest check                  # Verify mission state (for state-based missions)
 quest submit CYBERUS{...}    # Submit a captured flag
-reset-machine                # Reset machine files/folders without losing progress
-killswitch                   # Wipe all progress and reset the lab to Mission 00
+reset-machine                # Reset lab files (keeps your progress)
+killswitch                   # Wipe all progress and restart from 0
 ```
 
 ---

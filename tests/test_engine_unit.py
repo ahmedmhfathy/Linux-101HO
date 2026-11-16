@@ -51,25 +51,26 @@ class TestQuestEngineAndMissions(unittest.TestCase):
     def tearDown(self) -> None:
         self.tmp_dir.cleanup()
 
-    def test_flag_format_is_cyberus(self) -> None:
+    def test_flag_format_is_cyberus_dynamic_leet(self) -> None:
         self.assertEqual(FLAG_PREFIX, "CYBERUS")
-        self.assertEqual(WARMUP_FLAG, "CYBERUS{hello_linux}")
+        self.assertEqual(WARMUP_FLAG, "CYBERUS{hello_linux_world}")
         flag_01 = compute_flag("testsecret", "student-123", "01")
-        self.assertTrue(flag_01.startswith("CYBERUS{01_"))
+        self.assertTrue(flag_01.startswith("CYBERUS{"))
         self.assertTrue(flag_01.endswith("}"))
+        self.assertNotEqual(flag_01, "CYBERUS{absolute_path_master}")
         self.assertTrue(verify_flag(flag_01, flag_01))
-        self.assertFalse(verify_flag(flag_01, "CYBERUS{01_000000000000}"))
+        self.assertFalse(verify_flag(flag_01, "CYBERUS{absolute_path_master}"))
 
     def test_all_session_missions_loaded_in_order(self) -> None:
         missions = self.engine.load_missions()
         ids = [m["id"] for m in missions]
-        expected_ids = ["00", "01", "02", "04", "05", "07", "08"]
+        expected_ids = ["00", "01", "02", "03", "04", "05", "06"]
         self.assertEqual(ids, expected_ids)
 
     def test_linear_unlock_progression(self) -> None:
         state = self.engine.ensure_initialized()
         unlocked = [m["id"] for m in self.engine.get_unlocked_missions(state)]
-        self.assertEqual(unlocked, ["00", "01", "02", "04", "05", "07", "08"])
+        self.assertEqual(unlocked, ["00", "01", "02", "03", "04", "05", "06"])
         self.assertEqual(self.engine.get_current_mission(state)["id"], "00")
 
         state["completed"]["00"] = "2026-11-14T00:00:00Z"
@@ -79,7 +80,7 @@ class TestQuestEngineAndMissions(unittest.TestCase):
         for mid in ("01", "02"):
             state["completed"][mid] = "2026-11-14T00:00:00Z"
         self.engine.save_state(state)
-        self.assertEqual(self.engine.get_current_mission(state)["id"], "04")
+        self.assertEqual(self.engine.get_current_mission(state)["id"], "03")
 
     def test_check_context_refuses_external_paths_and_symlinks(self) -> None:
         outside_file = self.base / "secret_outside.txt"
@@ -98,7 +99,7 @@ class TestQuestEngineAndMissions(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             ctx.read("../secret_outside.txt")
 
-    def test_mission_02_04_07_checkers(self) -> None:
+    def test_mission_02_03_05_checkers(self) -> None:
         student_id = "unit-test-student"
         missions_dir = PROJECT_ROOT / "missions"
 
@@ -116,9 +117,9 @@ class TestQuestEngineAndMissions(unittest.TestCase):
         ok, _ = check_02(ctx02)
         self.assertTrue(ok)
 
-        # Mission 04 checker (case-insensitive evidence dir + any filename for top researcher)
-        check_04 = load_checker(missions_dir / "04-evidence-room")
-        ctx04 = CheckContext(self.home_dir, 1000, 1000, student_id, "CYBERUS{04_test}", "04")
+        # Mission 03 checker (case-insensitive evidence dir + any filename for top researcher)
+        check_03 = load_checker(missions_dir / "03-evidence-room")
+        ctx03 = CheckContext(self.home_dir, 1000, 1000, student_id, "CYBERUS{03_test}", "03")
         h04 = deterministic_token(student_id, "m04_evd", 10)
         (self.home_dir / "EVIDENCE").mkdir(parents=True, exist_ok=True)
         (self.home_dir / "EVIDENCE" / "record_01_02.evd").write_text(
@@ -127,11 +128,11 @@ class TestQuestEngineAndMissions(unittest.TestCase):
         (self.home_dir / "EVIDENCE" / "winner_name.txt").write_text(
             f"hunter_{h04[:6]}\n", encoding="utf-8"
         )
-        self.assertTrue(check_04(ctx04)[0])
+        self.assertTrue(check_03(ctx03)[0])
 
-        # Mission 07 checker
-        check_07 = load_checker(missions_dir / "07-redirect-trilogy")
-        ctx07 = CheckContext(self.home_dir, 1000, 1000, student_id, "CYBERUS{07_test}", "07")
+        # Mission 05 checker
+        check_05 = load_checker(missions_dir / "05-redirect-trilogy")
+        ctx05 = CheckContext(self.home_dir, 1000, 1000, student_id, "CYBERUS{05_test}", "05")
         s1 = f"STAGE1-OK-{deterministic_token(student_id, 'm07_s1', 8).upper()}"
         p1 = f"HALF1:PART1-{deterministic_token(student_id, 'm07_p1', 6).upper()}"
         p2 = f"HALF2:PART2-{deterministic_token(student_id, 'm07_p2', 6).upper()}"
@@ -139,7 +140,7 @@ class TestQuestEngineAndMissions(unittest.TestCase):
         (self.home_dir / "myflag").write_text(s1 + "\n", encoding="utf-8")
         (self.home_dir / "twopart.txt").write_text(p1 + "\n" + p2 + "\n", encoding="utf-8")
         (self.home_dir / "stderr_flag.txt").write_text(s3 + "\n", encoding="utf-8")
-        self.assertTrue(check_07(ctx07)[0])
+        self.assertTrue(check_05(ctx05)[0])
 
     def test_export_token_format(self) -> None:
         state = self.engine.ensure_initialized()
