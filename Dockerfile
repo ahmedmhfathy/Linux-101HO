@@ -53,12 +53,13 @@ RUN rm -f /etc/dpkg/dpkg.cfg.d/excludes && \
     rm -rf /var/lib/apt/lists/* && \
     MANPAGER=cat man ls >/dev/null
 
-# Ensure UID 1000 belongs to `student` (Ubuntu 24.04 ships with `ubuntu` at UID 1000)
+# Ensure UID 1000 belongs to user `member` and GID 1000 belongs to group `bug`
 RUN if id -u ubuntu >/dev/null 2>&1; then userdel -r ubuntu || true; fi && \
     if getent group ubuntu >/dev/null 2>&1; then groupdel ubuntu || true; fi && \
-    groupadd -g 1000 student && \
-    useradd -m -u 1000 -g 1000 -s /bin/bash student && \
-    passwd -d student >/dev/null 2>&1 || true
+    groupadd -g 1000 bug && \
+    useradd -m -d /home/member -u 1000 -g 1000 -s /bin/bash member && \
+    ln -sfn /home/member /home/student && \
+    passwd -d member >/dev/null 2>&1 || true
 
 # Create directories with strict root ownership and permissions
 RUN mkdir -p /opt/quest/engine /opt/quest/missions /opt/quest/tests \
@@ -91,6 +92,6 @@ RUN mkdir -p /usr/share/man/man1 /usr/local/share/man/man1 && \
     find /opt/quest/missions -name "*.sh" -exec chmod 0700 {} + && \
     chmod 0700 /opt/quest/tests/run_all.sh
 
-WORKDIR /home/student
+WORKDIR /home/member
 ENTRYPOINT ["/opt/quest/entrypoint.sh"]
 CMD ["login-shell"]

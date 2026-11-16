@@ -17,7 +17,7 @@ EOF
 
     TMP_SUDO="$(mktemp)"
     cat << 'EOF' > "$TMP_SUDO"
-student ALL=(root) NOPASSWD: /usr/local/bin/vuln-verify
+member ALL=(root) NOPASSWD: /usr/local/bin/vuln-verify
 EOF
     chmod 0440 "$TMP_SUDO"
     if command -v visudo >/dev/null 2>&1; then

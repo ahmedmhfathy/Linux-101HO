@@ -30,7 +30,7 @@ record_fail() {
 }
 
 run_as_student() {
-    runuser -u student -- bash -c "export HOME=/home/student PATH=/usr/local/bin:/usr/bin:/bin; cd /home/student; $1"
+    runuser -u member -- bash -c "export HOME=/home/member PATH=/usr/local/bin:/usr/bin:/bin; cd /home/member; $1"
 }
 
 test_mission_entry() {
@@ -69,6 +69,13 @@ test_mission_entry() {
             record_pass "Mission 02: Case B (in ~) rejects root of home dir"
         else
             record_fail "Mission 02: Case B (in ~)" "unexpected: $CASE_B"
+        fi
+    elif [[ "$MID" == "05" ]]; then
+        SEALED_OUT="$(run_as_student "sudo cat /opt/vault/flag.txt" 2>&1 || true)"
+        if printf '%s\n' "$SEALED_OUT" | grep -q "ACCESS DENIED: The vault is still sealed!"; then
+            record_pass "Mission 05: sudo cat /opt/vault/flag.txt blocked while vault is sealed"
+        else
+            record_fail "Mission 05: vault seal check" "unexpected output: $SEALED_OUT"
         fi
     fi
 
@@ -208,7 +215,16 @@ else
     record_fail "EXPORT: quest export generates signed token" "missing token"
 fi
 
-# 9. Killswitch Verification (resets all progress back to 00 and re-locks homework)
+# 9. Machine Reset Killswitch Verification (deletes user folders & restores files WITHOUT losing progress)
+run_as_student "mkdir -p ~/my_custom_test_dir && touch ~/my_custom_test_dir/junk.txt"
+run_as_student "reset-machine" >/dev/null
+if run_as_student "test ! -d ~/my_custom_test_dir" && run_as_student "quest status" | grep -q "7/7 completed"; then
+    record_pass "RESET-MACHINE: reset-machine deletes user folders and restores files while keeping 7/7 progress"
+else
+    record_fail "RESET-MACHINE: reset-machine verification" "either custom dir remained or progress was lost"
+fi
+
+# 10. Full Killswitch Verification (resets all progress back to 00 and re-locks homework)
 run_as_student "killswitch" >/dev/null
 if run_as_student "quest status" | grep -q "0/7 completed"; then
     record_pass "KILLSWITCH: killswitch resets all progress to 0/7 and locks homework"

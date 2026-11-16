@@ -176,7 +176,7 @@ int main(int argc, char *argv[]) {
     if (setenv("PATH", "/usr/local/bin:/usr/bin:/bin", 1) != 0 ||
         setenv("TERM", term_buf, 1) != 0 ||
         setenv("LANG", "C.UTF-8", 1) != 0 ||
-        setenv("HOME", ruid == 0 ? "/root" : "/home/student", 1) != 0 ||
+        setenv("HOME", ruid == 0 ? "/root" : "/home/member", 1) != 0 ||
         setenv("QUEST_CALLER_UID", uid_str, 1) != 0 ||
         setenv("QUEST_CALLER_GID", gid_str, 1) != 0 ||
         setenv("QUEST_INVOKED_AS", invoked_as, 1) != 0 ||

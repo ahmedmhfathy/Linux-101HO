@@ -2,11 +2,11 @@
 set -euo pipefail
 
 chmod u+r ~/doors/door1.txt
+CODE="$(awk -F': ' '/^PASSCODE:/ {print $2}' ~/doors/door1.txt)"
+chmod 640 ~/doors/door2.key
 chmod +x ~/doors/unlock.sh
-~/doors/unlock.sh
-chmod 640 ~/doors/door3.key
-sudo /usr/bin/cat /opt/vault/flag.txt > ~/doors/vault.txt
+printf '%s\n' "$CODE" | ~/doors/unlock.sh >/dev/null
 
-OUT="$(quest check 05)"
+OUT="$(sudo cat /opt/vault/flag.txt)"
 FLAG="$(printf '%s\n' "$OUT" | grep -oE 'CYBERUS\{[^}]+\}' | head -n 1)"
 quest submit "$FLAG"

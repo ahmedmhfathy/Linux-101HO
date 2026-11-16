@@ -4,14 +4,14 @@
   "part": 2,
   "category": "Permissions & Privileges",
   "title": "Locked Doors",
-  "kind": "state",
+  "kind": "program",
   "bonus": false,
   "bug_hunting": false,
-  "story": "Three locked permission doors inside `~/doors/` and a root-owned vault at `/opt/vault/flag.txt` stand between you and the flag.",
-  "description": "1. Door 1: `~/doors/door1.txt` cannot be read (`Permission denied`). Fix its permissions so you can read it.\n2. Door 2: `~/doors/unlock.sh` refuses to execute. Make it executable and run it.\n3. Door 3: Set `~/doors/door3.key` permissions to **exactly** `640` (`rw-r-----`).\n4. The Vault: Discover which command you are permitted to run as `root`, read `/opt/vault/flag.txt`, save the `VAULT_SECRET=...` line into `~/doors/vault.txt`, and run `quest check`.",
+  "story": "Two locked doors stand between you and a vault. Each one is jammed by its file permissions. Fix them one by one.",
+  "description": "Door 1: ~/doors/door1.txt has a passcode, but you can’t read it. Make it readable.\n\nDoor 2: ~/doors/door2.key is too open. Change its permissions so they read exactly rw-r-----.\n\nThe Lock: ~/doors/unlock.sh won’t run. Make it runnable, then run it.\n\nThe Vault: /opt/vault/flag.txt belongs to root—you need superuser powers to read what's inside it.",
   "hints": [
-    "Inspect the current permissions on all files inside `~/doors` first.",
-    "Grant owner read permission on `door1.txt`, add execute permission on `unlock.sh` and run it, and set octal `640` on `door3.key`.",
-    "List your allowed `sudo` privileges, run the permitted command to read `/opt/vault/flag.txt`, save the `VAULT_SECRET=...` value into `~/doors/vault.txt`, and run `quest check`."
+    "Check the current permissions inside `~/doors/` and make `~/doors/door1.txt` readable so you can view its PASSCODE.",
+    "Set `~/doors/door2.key` permissions to octal `640` (`rw-r-----`), then make `~/doors/unlock.sh` executable and run it.",
+    "Once `~/doors/unlock.sh` unseals the vault, read `/opt/vault/flag.txt` using `sudo` and submit the flag with `quest submit`."
   ]
 }

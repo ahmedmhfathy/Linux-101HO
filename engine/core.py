@@ -25,13 +25,14 @@ ENGINE_VERSION = "1.0.0"
 FLAG_PREFIX = "CYBERUS"
 WARMUP_FLAG = f"{FLAG_PREFIX}{{hello_linux}}"
 
-STUDENT_USER = "student"
+STUDENT_USER = "member"
+STUDENT_GROUP = "bug"
 STUDENT_UID = 1000
 STUDENT_GID = 1000
 
 DEFAULT_QUEST_ROOT = Path(os.environ.get("QUEST_ROOT", "/opt/quest"))
 DEFAULT_STATE_DIR = Path(os.environ.get("QUEST_STATE_DIR", "/var/lib/quest"))
-DEFAULT_HOME_DIR = Path(os.environ.get("QUEST_HOME_DIR", "/home/student"))
+DEFAULT_HOME_DIR = Path(os.environ.get("QUEST_HOME_DIR", "/home/member"))
 DEFAULT_CHALLENGE_DIR = Path(os.environ.get("QUEST_CHALLENGE_DIR", "/challenge"))
 RUNAS_TEMPLATE_BIN = Path(os.environ.get("QUEST_RUNAS_BIN", "/usr/local/lib/quest/runas"))
 
@@ -419,6 +420,48 @@ class QuestEngine:
             env["QUEST_FLAG"] = self.get_flag(mid, state)
         return env
 
+    def wipe_home_directory(self) -> None:
+        """Delete all user-created files and directories in home_dir (preserving shell dotfiles)."""
+        if not self.home_dir.is_dir():
+            return
+        preserved = {".bashrc", ".profile", ".bash_logout"}
+        for entry in list(self.home_dir.iterdir()):
+            if entry.name in preserved:
+                continue
+            try:
+                if entry.is_symlink() or entry.is_file():
+                    if not entry.is_symlink():
+                        try:
+                            os.chmod(str(entry), 0o600)
+                        except OSError:
+                            pass
+                    entry.unlink()
+                elif entry.is_dir():
+                    for root, dirs, files in os.walk(str(entry), topdown=False, followlinks=False):
+                        root_p = Path(root)
+                        if not root_p.is_symlink():
+                            try:
+                                os.chmod(str(root_p), 0o700)
+                            except OSError:
+                                pass
+                        for fname in files:
+                            fp = root_p / fname
+                            if not fp.is_symlink():
+                                try:
+                                    os.chmod(str(fp), 0o600)
+                                except OSError:
+                                    pass
+                        for dname in dirs:
+                            dp = root_p / dname
+                            if not dp.is_symlink():
+                                try:
+                                    os.chmod(str(dp), 0o700)
+                                except OSError:
+                                    pass
+                    shutil.rmtree(str(entry), ignore_errors=True)
+            except OSError:
+                pass
+
     def run_setup_phase(self, mission: Dict[str, Any], state: Dict[str, Any], phase: str) -> None:
         """Run setup.sh with strict privilege separation.
 
@@ -520,6 +563,13 @@ class QuestEngine:
         unlocked_ids = {m["id"] for m in self.get_unlocked_missions(state)}
         if mission["id"] not in unlocked_ids:
             raise QuestError(f"Mission {mission['id']} is still locked. Complete earlier missions first!")
+
+        if reset_home and mission["id"] == "05":
+            with FileLock(self.lock_file):
+                latest_tmp = self._load_state_unlocked()
+                latest_tmp.pop("m05_vault_unsealed", None)
+                self._save_state_unlocked(latest_tmp)
+            state.pop("m05_vault_unsealed", None)
 
         self.run_setup_phase(mission, state, "system")
         initialized_home = set(state.get("initialized_home", []))

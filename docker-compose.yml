@@ -5,7 +5,7 @@ services:
       context: .
       target: runtime
     container_name: cyberus-linux-quest
-    hostname: lab
+    hostname: cyberus
     pull_policy: never
     stdin_open: true
     tty: true
@@ -14,7 +14,7 @@ services:
     mem_limit: 512m
     cpus: 1.0
     volumes:
-      - cyberus-quest-v1-home:/home/student
+      - cyberus-quest-v1-home:/home/member
       - cyberus-quest-v1-state:/var/lib/quest
 
 volumes:

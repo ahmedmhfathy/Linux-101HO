@@ -77,22 +77,30 @@ class TestQuestEngineAndMissions(unittest.TestCase):
         unlocked = [m["id"] for m in self.engine.get_unlocked_missions(state)]
         self.assertEqual(unlocked, ["00"])
 
-        # Submit 00 -> unlocks 01 and B1 (Part 1 bonus)
+        # Submit 00 -> unlocks 01 (Home tasks 03 and B1 stay locked until unlock-homework)
         state["completed"]["00"] = "2026-11-14T00:00:00Z"
         self.engine.save_state(state)
         unlocked = [m["id"] for m in self.engine.get_unlocked_missions(state)]
         self.assertIn("01", unlocked)
-        self.assertIn("B1", unlocked)
+        self.assertNotIn("B1", unlocked)
         self.assertNotIn("02", unlocked)
 
-        # Complete Part 1 required missions (01, 02, 03) WITHOUT B1 -> unlocks Part 2 (04 & B2)
-        for mid in ("01", "02", "03"):
+        # Complete Part 1 hands-on missions (01, 02) -> unlocks Part 2 (04) without needing 03 or B1
+        for mid in ("01", "02"):
             state["completed"][mid] = "2026-11-14T00:00:00Z"
         self.engine.save_state(state)
         unlocked = [m["id"] for m in self.engine.get_unlocked_missions(state)]
         self.assertIn("04", unlocked)
-        self.assertIn("B2", unlocked)
         self.assertEqual(self.engine.get_current_mission(state)["id"], "04")
+
+        # Unlock homework -> 03, B1, 06, B2 become unlocked
+        state["homework_unlocked"] = True
+        self.engine.save_state(state)
+        unlocked = [m["id"] for m in self.engine.get_unlocked_missions(state)]
+        self.assertIn("03", unlocked)
+        self.assertIn("B1", unlocked)
+        self.assertIn("06", unlocked)
+        self.assertIn("B2", unlocked)
 
     def test_check_context_refuses_external_paths_and_symlinks(self) -> None:
         outside_file = self.base / "secret_outside.txt"
@@ -120,10 +128,12 @@ class TestQuestEngineAndMissions(unittest.TestCase):
         ctx02 = CheckContext(self.home_dir, 1000, 1000, student_id, "CYBERUS{02_test}", "02")
         ok, _ = check_02(ctx02)
         self.assertFalse(ok)
-        phrase = f"CYBERUS-NOTE-{deterministic_token(student_id, 'mission02_phrase', 8).upper()}"
-        (self.home_dir / ".stage02_a_done").write_text(phrase, encoding="utf-8")
-        (self.home_dir / "notes").mkdir(exist_ok=True)
-        (self.home_dir / "notes" / "plan.txt").write_text(phrase + "\n", encoding="utf-8")
+        hex_part = deterministic_token(student_id, "mission02_phrase", 8).upper()
+        (self.home_dir / "myroom").mkdir(exist_ok=True)
+        (self.home_dir / "myroom" / ".code.txt").write_text(
+            f"# Instruction: Replace 'CYBERUS' with 'Tofa7aElSafa7a'\nTofa7aElSafa7a-NOTE-{hex_part}\n",
+            encoding="utf-8",
+        )
         ok, _ = check_02(ctx02)
         self.assertTrue(ok)
 
@@ -144,15 +154,17 @@ class TestQuestEngineAndMissions(unittest.TestCase):
         )
         self.assertTrue(check_03(ctx03)[0])
 
-        # Mission 04 checker
+        # Mission 04 checker (case-insensitive evidence dir + any filename for top researcher)
         check_04 = load_checker(missions_dir / "04-evidence-room")
         ctx04 = CheckContext(self.home_dir, 1000, 1000, student_id, "CYBERUS{04_test}", "04")
         h04 = deterministic_token(student_id, "m04_evd", 10)
-        (self.home_dir / "evidence").mkdir(parents=True, exist_ok=True)
-        (self.home_dir / "evidence" / "case.txt").write_text(
-            f"MARKER: EVIDENCE_MARKER_CYBERUS\nSIGNATURE: {h04}\n", encoding="utf-8"
+        (self.home_dir / "EVIDENCE").mkdir(parents=True, exist_ok=True)
+        (self.home_dir / "EVIDENCE" / "record_01_02.evd").write_text(
+            f"PHRASE: a3da2_sherket_nvidia_microntech\nSIGNATURE: {h04}\n", encoding="utf-8"
         )
-        (self.home_dir / "evidence" / "top.txt").write_text(f"hunter_{h04[:6]}\n", encoding="utf-8")
+        (self.home_dir / "EVIDENCE" / "winner_name.txt").write_text(
+            f"hunter_{h04[:6]}\n", encoding="utf-8"
+        )
         self.assertTrue(check_04(ctx04)[0])
 
         # Mission 07 checker

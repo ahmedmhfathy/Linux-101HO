@@ -86,7 +86,7 @@ fi
 if [[ "${1:-}" == "--doctor" ]]; then
     exec "${DOCKER_CMD[@]}" run --rm \
         --network none \
-        -v "${HOME_VOLUME}:/home/student" \
+        -v "${HOME_VOLUME}:/home/member" \
         -v "${STATE_VOLUME}:/var/lib/quest" \
         "$IMAGE_NAME" /usr/local/bin/quest doctor
 fi
@@ -94,7 +94,7 @@ fi
 # If container is already running, attach a new login shell inside it
 if "${DOCKER_CMD[@]}" ps --format '{{.Names}}' | grep -qx "$CONTAINER_NAME"; then
     echo "[*] Attaching to running '${CONTAINER_NAME}' container..."
-    exec "${DOCKER_CMD[@]}" exec -it -u student "$CONTAINER_NAME" bash -l
+    exec "${DOCKER_CMD[@]}" exec -it -u member "$CONTAINER_NAME" bash -l
 fi
 
 # Remove any stopped leftover container with the same name
@@ -104,11 +104,11 @@ fi
 
 exec "${DOCKER_CMD[@]}" run -it --rm \
     --name "$CONTAINER_NAME" \
-    --hostname lab \
+    --hostname cyberus \
     --network none \
     --pids-limit 256 \
     --memory 512m \
     --cpus 1 \
-    -v "${HOME_VOLUME}:/home/student" \
+    -v "${HOME_VOLUME}:/home/member" \
     -v "${STATE_VOLUME}:/var/lib/quest" \
     "$IMAGE_NAME"

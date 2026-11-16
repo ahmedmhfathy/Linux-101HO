@@ -111,7 +111,8 @@ def cmd_show(engine: QuestEngine, mission_id: Optional[str] = None) -> int:
         print(f"When ready, verify with: `{CYAN}quest check{RESET}`  |  Submit flag: `{CYAN}quest submit {FLAG_PREFIX}{{...}}{RESET}`")
     else:
         print(f"Submit flag: `{CYAN}quest submit {FLAG_PREFIX}{{...}}{RESET}`")
-    print(f"Need help? `{CYAN}quest hint{RESET}`  |  All missions: `{CYAN}quest list{RESET}`  |  Reset all: `{CYAN}quest killswitch{RESET}`")
+    print(f"Need help? `{CYAN}quest hint{RESET}`  |  All missions: `{CYAN}quest list{RESET}`")
+    print(f"Reset machine files (keep progress): `{CYAN}reset-machine{RESET}`  |  Wipe all progress: `{CYAN}killswitch{RESET}`")
     return 0
 
 
@@ -256,15 +257,48 @@ def cmd_check(engine: QuestEngine, mission_id: Optional[str] = None) -> int:
         return 1
 
 
-def cmd_killswitch(engine: QuestEngine) -> int:
+def cmd_reset_machine(engine: QuestEngine) -> int:
+    """Reset the machine filesystem state (delete user folders/files & restore challenge files) WITHOUT losing progress."""
+    state = engine.load_state()
+    active_id = state.get("active_mission")
+    state["initialized_home"] = []
+    state.pop("m05_vault_unsealed", None)
+    engine.save_state(state)
+
+    engine.wipe_home_directory()
+    for m in engine.load_missions():
+        try:
+            engine.run_setup_phase(m, state, "home")
+        except Exception:
+            pass
+    engine.sync_active_environment(force_system_for_current=True)
+    if active_id:
+        try:
+            engine.activate_mission(active_id, reset_home=True)
+        except Exception:
+            pass
+
+    print(
+        f"{YELLOW}[MACHINE RESET]{RESET} {GREEN}All user-created files/folders removed and challenge files restored to original state (mission progress preserved).{RESET}"
+    )
+    return 0
+
+
+def cmd_killswitch(engine: QuestEngine, args: Optional[List[str]] = None) -> int:
     """Immediate killswitch that wipes all progress and resets all missions without prompting."""
+    if args and any(a in ("--soft", "-s", "machine", "files", "--machine") for a in args):
+        return cmd_reset_machine(engine)
+
     state = engine.load_state()
     state["completed"] = {}
     state["hints_used"] = {}
     state["initialized_home"] = []
     state["homework_unlocked"] = False
     state.pop("active_mission", None)
+    state.pop("m05_vault_unsealed", None)
     engine.save_state(state)
+
+    engine.wipe_home_directory()
     for m in engine.load_missions():
         try:
             engine.run_setup_phase(m, state, "home")
@@ -275,9 +309,104 @@ def cmd_killswitch(engine: QuestEngine) -> int:
     return 0
 
 
+def cmd_internal_unseal_vault(engine: QuestEngine, args: List[str]) -> int:
+    """Validate Mission 05 Door 1, Door 2, unlock.sh, and passcode, then unseal /opt/vault/flag.txt."""
+    state = engine.load_state()
+    doors_dir = engine.home_dir / "doors"
+    door1 = doors_dir / "door1.txt"
+    door2 = doors_dir / "door2.key"
+    unlock_sh = doors_dir / "unlock.sh"
+
+    if not door1.is_file() or door1.is_symlink():
+        print("[-] ~/doors/door1.txt is missing! Run `quest reset 05`.", file=sys.stderr)
+        return 1
+    m1 = stat.S_IMODE(door1.lstat().st_mode)
+    if not (m1 & stat.S_IRUSR):
+        print("[-] Door 1 (~/doors/door1.txt) is still locked! Make it readable first.", file=sys.stderr)
+        return 1
+
+    if not door2.is_file() or door2.is_symlink():
+        print("[-] ~/doors/door2.key is missing! Run `quest reset 05`.", file=sys.stderr)
+        return 1
+    m2 = stat.S_IMODE(door2.lstat().st_mode)
+    if m2 != 0o640:
+        print(
+            f"[-] Door 2 (~/doors/door2.key) is still jammed (current mode: {oct(m2)[2:]})! "
+            "Change its permissions so they read exactly rw-r----- (640).",
+            file=sys.stderr,
+        )
+        return 1
+
+    if not unlock_sh.is_file() or unlock_sh.is_symlink():
+        print("[-] ~/doors/unlock.sh is missing! Run `quest reset 05`.", file=sys.stderr)
+        return 1
+    m_unlock = stat.S_IMODE(unlock_sh.lstat().st_mode)
+    if not (m_unlock & stat.S_IXUSR):
+        print("[-] ~/doors/unlock.sh is not runnable yet!", file=sys.stderr)
+        return 1
+
+    expected_code = deterministic_token(state["student_id"], "m05_door1_code", 8).upper()
+    raw_input_code = " ".join(args).strip()
+    if raw_input_code.upper().startswith("PASSCODE:"):
+        raw_input_code = raw_input_code.split(":", 1)[1].strip()
+
+    if raw_input_code.upper() != expected_code:
+        print("[-] Invalid passcode! Read ~/doors/door1.txt to get the Door 1 PASSCODE.", file=sys.stderr)
+        return 1
+
+    flag = engine.get_flag("05", state)
+    vault_dir = Path("/opt/vault")
+    vault_dir.mkdir(parents=True, exist_ok=True)
+    vault_text = (
+        f"[+] VAULT UNLOCKED!\n"
+        f"Flag: {flag}\n"
+        f"Submit your flag with: quest submit {flag}\n"
+    )
+    for vfile in (vault_dir / "flag.txt", vault_dir / "vault.txt"):
+        vfile.write_text(vault_text, encoding="utf-8")
+        os.chown(str(vfile), 0, 0)
+        os.chmod(str(vfile), 0o600)
+
+    state["m05_vault_unsealed"] = True
+    engine.save_state(state)
+    print("[+] Door 1 and Door 2 verified!")
+    print("[+] The Vault (/opt/vault/flag.txt) is now UNSEALED. Use superuser powers (sudo) to read it!")
+    return 0
+
+
+def cmd_internal_check_vault(engine: QuestEngine) -> int:
+    """Verify whether Mission 05 doors and unlock.sh have unsealed the vault."""
+    state = engine.load_state()
+    doors_dir = engine.home_dir / "doors"
+    door1 = doors_dir / "door1.txt"
+    door2 = doors_dir / "door2.key"
+    unlock_sh = doors_dir / "unlock.sh"
+
+    unsealed = bool(state.get("m05_vault_unsealed", False))
+    try:
+        m1 = stat.S_IMODE(door1.lstat().st_mode)
+        m2 = stat.S_IMODE(door2.lstat().st_mode)
+        mu = stat.S_IMODE(unlock_sh.lstat().st_mode)
+        doors_ok = bool(m1 & stat.S_IRUSR) and (m2 == 0o640) and bool(mu & stat.S_IXUSR)
+    except OSError:
+        doors_ok = False
+
+    if not (unsealed and doors_ok):
+        print("[-] ACCESS DENIED: The vault is still sealed!")
+        print("[*] Unlock Door 1 and Door 2 using ~/doors/unlock.sh first.")
+        return 1
+
+    flag = engine.get_flag("05", state)
+    print(f"[+] VAULT UNLOCKED!\nFlag: {flag}\nSubmit your flag with: quest submit {flag}")
+    return 0
+
+
 def cmd_reset(engine: QuestEngine, args: List[str]) -> int:
     auto_yes = "--yes" in args or "-y" in args
     filtered = [a for a in args if a not in ("--yes", "-y")]
+
+    if filtered and filtered[0] in ("--machine", "machine"):
+        return cmd_reset_machine(engine)
 
     if filtered and filtered[0] == "--all":
         if not auto_yes:
@@ -385,6 +514,10 @@ def main(argv: Optional[List[str]] = None) -> int:
             engine.ensure_initialized()
             engine.sync_active_environment(force_system_for_current=True)
             return 0
+        if sub == "--internal-unseal-vault":
+            return cmd_internal_unseal_vault(engine, rest)
+        if sub == "--internal-check-vault":
+            return cmd_internal_check_vault(engine)
         if sub in ("show", "mission"):
             return cmd_show(engine, rest[0] if rest else None)
         if sub == "list":
@@ -398,7 +531,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         if sub == "check":
             return cmd_check(engine, rest[0] if rest else None)
         if sub == "killswitch":
-            return cmd_killswitch(engine)
+            return cmd_killswitch(engine, rest)
+        if sub in ("reset-machine", "softswitch", "clean-machine"):
+            return cmd_reset_machine(engine)
         if sub == "reset":
             return cmd_reset(engine, rest)
         if sub == "unlock-homework":
@@ -419,7 +554,8 @@ def main(argv: Optional[List[str]] = None) -> int:
             print("  quest hint [id]              Reveal the next hint tier (up to 3)")
             print(f"  quest submit {FLAG_PREFIX}{{...}}    Submit a captured flag")
             print("  quest check [id]             Validate mission state and reveal flag")
-            print("  quest reset [id|--all]       Restore mission files (or reset all)")
+            print("  quest reset [id|--all]       Restore current/specific mission files")
+            print("  quest reset-machine          Reset all machine files/folders WITHOUT losing progress")
             print("  quest killswitch             Immediately wipe all progress and reset all files")
             print("  quest doctor                 Run environment health check")
             print("  quest export                 Print signed progress token for instructor")

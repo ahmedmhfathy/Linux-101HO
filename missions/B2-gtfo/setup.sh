@@ -30,7 +30,7 @@ EOF
 
     TMP_SUDO="$(mktemp)"
     cat << 'EOF' > "$TMP_SUDO"
-student ALL=(root) NOPASSWD: /usr/bin/less /var/log/quest-demo.log
+member ALL=(root) NOPASSWD: /usr/bin/less /var/log/quest-demo.log
 EOF
     chmod 0440 "$TMP_SUDO"
     if command -v visudo >/dev/null 2>&1; then
