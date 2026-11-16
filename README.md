@@ -39,8 +39,12 @@ killswitch                   # Wipe all progress and restart from 0
 ## Quick Start
 
 ```bash
-# First-time setup (if Docker is not installed yet)
-./setup-docker.sh
+# install
+git clone https://github.com/ahmedmhfathy/Linux-101HO.git
+cd Linux-101HO
+
+# Docker setup (if Docker is not installed yet)
+chmod +x setup-docker.sh ; ./setup-docker.sh
 
 # Build the runtime image
 docker build --target runtime -t linux-quest:1.0 .
@@ -49,5 +53,5 @@ docker build --target runtime -t linux-quest:1.0 .
 docker run --rm --network none linux-quest:1.0 /opt/quest/tests/run_all.sh
 
 # Launch the interactive student lab
-./start.sh
+chmod +x start.sh ; ./start.sh
 ```
