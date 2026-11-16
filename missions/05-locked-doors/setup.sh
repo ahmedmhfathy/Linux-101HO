@@ -25,8 +25,9 @@ EOF
         done
     fi
 
-    # Install /usr/local/bin/cat wrapper to enforce the vault seal check when invoked via sudo
-    cat << 'EOF' > /usr/local/bin/cat
+    # Install /usr/local/bin/cat wrapper atomically (using /usr/bin/cat + mktemp to avoid 'Text file busy')
+    TMP_CAT="$(mktemp)"
+    /usr/bin/cat << 'EOF' > "$TMP_CAT"
 #!/usr/bin/env bash
 set -euo pipefail
 
@@ -50,8 +51,9 @@ fi
 
 exec /usr/bin/cat "$@"
 EOF
-    chown root:root /usr/local/bin/cat
-    chmod 0755 /usr/local/bin/cat
+    chown root:root "$TMP_CAT"
+    chmod 0755 "$TMP_CAT"
+    mv -f "$TMP_CAT" /usr/local/bin/cat
 
     TMP_SUDO="$(mktemp)"
     cat << 'EOF' > "$TMP_SUDO"
