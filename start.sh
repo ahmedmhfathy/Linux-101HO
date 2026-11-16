@@ -83,6 +83,17 @@ if ! "${DOCKER_CMD[@]}" image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
     fi
 fi
 
+# If this is a freshly cloned directory (no .quest_initialized marker yet),
+# wipe any leftover container and volumes from previous clones so it starts 100% clean.
+INIT_MARKER="${SCRIPT_DIR}/.quest_initialized"
+if [[ ! -f "$INIT_MARKER" ]]; then
+    if "${DOCKER_CMD[@]}" ps -a --format '{{.Names}}' | grep -qx "$CONTAINER_NAME"; then
+        "${DOCKER_CMD[@]}" rm -f "$CONTAINER_NAME" >/dev/null 2>&1 || true
+    fi
+    "${DOCKER_CMD[@]}" volume rm -f "$HOME_VOLUME" "$STATE_VOLUME" >/dev/null 2>&1 || true
+    touch "$INIT_MARKER" 2>/dev/null || true
+fi
+
 if [[ "${1:-}" == "--doctor" ]]; then
     exec "${DOCKER_CMD[@]}" run --rm \
         --network none \

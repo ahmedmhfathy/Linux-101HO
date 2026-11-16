@@ -64,27 +64,60 @@ fi
 
 touch "$HOME_DIR/.bashrc"
 
-# Migrate any legacy student@lab prompt in persisted volume
-sed -i 's/student@lab/member@cyberus/g' "$HOME_DIR/.bashrc" 2>/dev/null || true
+# Ensure .bashrc has the latest Cyberus Linux Quest block (including history-clearing wrappers)
+if grep -q "# >>> CYBERUS-LINUX-QUEST >>>" "$HOME_DIR/.bashrc" 2>/dev/null; then
+    sed -i '/# >>> CYBERUS-LINUX-QUEST >>>/,/# <<< CYBERUS-LINUX-QUEST <<</d' "$HOME_DIR/.bashrc" 2>/dev/null || true
+fi
 
-# Add managed Cyberus Linux Quest block to .bashrc idempotently
-if ! grep -q "# >>> CYBERUS-LINUX-QUEST >>>" "$HOME_DIR/.bashrc" 2>/dev/null; then
-    cat << 'EOF' >> "$HOME_DIR/.bashrc"
+cat << 'EOF' >> "$HOME_DIR/.bashrc"
 
 # >>> CYBERUS-LINUX-QUEST >>>
 export LANG=C.UTF-8
 export TERM="${TERM:-xterm-256color}"
 export PS1='\[\033[01;32m\]member@cyberus\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ '
+
+killswitch() {
+    /usr/local/bin/quest killswitch "$@"
+    local rc=$?
+    rm -f ~/.bash_history ~/.lesshst 2>/dev/null || true
+    history -c 2>/dev/null || true
+    history -w 2>/dev/null || true
+    return $rc
+}
+
+reset-machine() {
+    /usr/local/bin/quest reset-machine "$@"
+    local rc=$?
+    rm -f ~/.bash_history ~/.lesshst 2>/dev/null || true
+    history -c 2>/dev/null || true
+    history -w 2>/dev/null || true
+    return $rc
+}
+
+softswitch() {
+    reset-machine "$@"
+}
+
+quest() {
+    /usr/local/bin/quest "$@"
+    local rc=$?
+    if [[ "${1:-}" == "killswitch" ]] || [[ "${1:-}" == "reset-machine" ]] || [[ "${1:-}" == "softswitch" ]] || [[ "${*:-}" == *"--all"* ]] || [[ "${*:-}" == *"--machine"* ]]; then
+        rm -f ~/.bash_history ~/.lesshst 2>/dev/null || true
+        history -c 2>/dev/null || true
+        history -w 2>/dev/null || true
+    fi
+    return $rc
+}
+
 if [[ $- == *i* ]]; then
     echo -e "\033[1;36m============================================================\033[0m"
-    echo -e "\033[1;36m   Welcome to CYBERUS LINUX QUEST (Bug Hunting Activity)\033[0m"
+    echo -e "\033[1;36m   Welcome to CYBERUS LINUX QUEST\033[0m"
     echo -e "\033[0;37m   Type \033[1;33mquest\033[0;37m to view your current mission.\033[0m"
     echo -e "\033[0;37m   Type \033[1;33mquest list\033[0;37m to see all missions, or \033[1;33mquest hint\033[0;37m for help.\033[0m"
     echo -e "\033[1;36m============================================================\033[0m"
 fi
 # <<< CYBERUS-LINUX-QUEST <<<
 EOF
-fi
 
 chown member:bug "$HOME_DIR" "$HOME_DIR/.bashrc"
 if [[ -f "$HOME_DIR/.profile" ]]; then

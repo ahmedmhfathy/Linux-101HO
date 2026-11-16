@@ -333,49 +333,8 @@ class QuestEngine:
         return None
 
     def get_unlocked_missions(self, state: Dict[str, Any]) -> List[Dict[str, Any]]:
-        """Determine which missions are currently unlocked.
-
-        - Mission 00 is always unlocked.
-        - Hands-on required missions (non-bonus, non-bug_hunting) unlock linearly.
-        - Missions labeled `bug_hunting` or `bonus` are locked for at-home tasks unless
-          `homework_unlocked` is enabled in state (via `quest unlock-homework`), and they
-          NEVER block subsequent hands-on missions from unlocking.
-        """
-        missions = self.load_missions()
-        completed = set(state.get("completed", {}).keys())
-        homework_unlocked = bool(state.get("homework_unlocked", False))
-        unlocked: List[Dict[str, Any]] = []
-
-        all_prev_req_done = True
-        unlocked_parts = {0}
-        if "00" in completed:
-            unlocked_parts.add(1)
-
-        # First pass: hands-on required missions (skipping bonus and bug_hunting)
-        for m in missions:
-            if m.get("bonus", False) or m.get("bug_hunting", False):
-                continue
-            mid = m["id"]
-            if mid == "00" or all_prev_req_done:
-                unlocked.append(m)
-                unlocked_parts.add(int(m.get("part", 1)))
-            if mid not in completed:
-                all_prev_req_done = False
-
-        if not homework_unlocked:
-            return unlocked
-
-        # When homework is unlocked, include bug_hunting and bonus missions for unlocked parts
-        unlocked_ids = {m["id"] for m in unlocked}
-        result: List[Dict[str, Any]] = []
-        for m in missions:
-            if m["id"] in unlocked_ids:
-                result.append(m)
-            elif (m.get("bonus", False) or m.get("bug_hunting", False)) and int(
-                m.get("part", 1)
-            ) in unlocked_parts:
-                result.append(m)
-        return result
+        """Return all available session missions so students can view/switch to any mission."""
+        return self.load_missions()
 
     def get_current_mission(self, state: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Return the active selected mission if valid, otherwise the first incomplete hands-on mission."""
@@ -421,7 +380,7 @@ class QuestEngine:
         return env
 
     def wipe_home_directory(self) -> None:
-        """Delete all user-created files and directories in home_dir (preserving shell dotfiles)."""
+        """Delete all user-created files, directories, and command history in home_dir (preserving shell dotfiles)."""
         if not self.home_dir.is_dir():
             return
         preserved = {".bashrc", ".profile", ".bash_logout"}
@@ -459,6 +418,16 @@ class QuestEngine:
                                 except OSError:
                                     pass
                     shutil.rmtree(str(entry), ignore_errors=True)
+            except OSError:
+                pass
+        for hist_file in (
+            self.home_dir / ".bash_history",
+            self.home_dir / ".lesshst",
+            Path("/root/.bash_history"),
+        ):
+            try:
+                if hist_file.exists() or hist_file.is_symlink():
+                    hist_file.unlink()
             except OSError:
                 pass
 

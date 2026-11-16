@@ -69,19 +69,16 @@ class TestQuestEngineAndMissions(unittest.TestCase):
     def test_linear_unlock_progression(self) -> None:
         state = self.engine.ensure_initialized()
         unlocked = [m["id"] for m in self.engine.get_unlocked_missions(state)]
-        self.assertEqual(unlocked, ["00"])
+        self.assertEqual(unlocked, ["00", "01", "02", "04", "05", "07", "08"])
+        self.assertEqual(self.engine.get_current_mission(state)["id"], "00")
 
         state["completed"]["00"] = "2026-11-14T00:00:00Z"
         self.engine.save_state(state)
-        unlocked = [m["id"] for m in self.engine.get_unlocked_missions(state)]
-        self.assertIn("01", unlocked)
-        self.assertNotIn("02", unlocked)
+        self.assertEqual(self.engine.get_current_mission(state)["id"], "01")
 
         for mid in ("01", "02"):
             state["completed"][mid] = "2026-11-14T00:00:00Z"
         self.engine.save_state(state)
-        unlocked = [m["id"] for m in self.engine.get_unlocked_missions(state)]
-        self.assertIn("04", unlocked)
         self.assertEqual(self.engine.get_current_mission(state)["id"], "04")
 
     def test_check_context_refuses_external_paths_and_symlinks(self) -> None:
