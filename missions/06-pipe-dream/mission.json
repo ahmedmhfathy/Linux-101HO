@@ -8,5 +8,5 @@
   "bonus": false,
   "bug_hunting": false,
   "story": "Three programs work together like an assembly line to build a secret passphrase. Once it's ready, pass it into the final gatekeeper to unlock your flag.",
-  "description": "The Assembly Line: Chain /challenge/stage1, /challenge/stage2, and /challenge/stage3 together so each program passes its output directly to the next. The final stage prints your secret passphrase.\n\nThe Gate: /challenge/checker verifies the passphrase, but it refuses manual keyboard typing and command-line arguments—feed the passphrase directly into its standard input to get the flag."
+  "description": "1. The Assembly Line: Chain /challenge/stage1, /challenge/stage2, and /challenge/stage3 together so each program passes its output directly to the next. The final stage prints your secret passphrase.\n\n2. The Gate: /challenge/checker verifies the passphrase, but it refuses manual keyboard typing and command-line arguments—feed the passphrase directly into its standard input to get the flag."
 }

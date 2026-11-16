@@ -9,7 +9,6 @@ HOME_DIR="${QUEST_HOME_DIR:-/home/student}"
 
 if [[ "$PHASE" == "system" ]]; then
     mkdir -p "$CHALLENGE_DIR" /usr/local/share/man/man1
-    rm -f /var/log/run
     if [[ -f "$RUNAS_BIN" ]]; then
         cp -f "$RUNAS_BIN" "$CHALLENGE_DIR/run"
         chown root:root "$CHALLENGE_DIR/run"

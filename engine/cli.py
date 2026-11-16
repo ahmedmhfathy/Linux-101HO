@@ -271,12 +271,29 @@ def cmd_submit(engine: QuestEngine, flag_arg: Optional[str]) -> int:
 
 def cmd_check(engine: QuestEngine, mission_id: Optional[str] = None) -> int:
     state = engine.load_state()
-    target_mission = engine.get_mission(mission_id) if mission_id else engine.get_current_mission(state)
-    if target_mission is None:
-        print(f"{RED}[!] Mission not found.{RESET}")
-        return 1
+    if mission_id:
+        target_mission = engine.get_mission(mission_id)
+        if target_mission is None:
+            print(f"{RED}[!] Mission not found.{RESET}")
+            return 1
+        ok, msg, mission = engine.run_checker(target_mission["id"])
+    else:
+        target_mission = engine.get_current_mission(state)
+        if target_mission is None:
+            print(f"{RED}[!] Mission not found.{RESET}")
+            return 1
+        ok, msg, mission = engine.run_checker(target_mission["id"])
+        # If the current active mission didn't pass (or isn't a state mission),
+        # check if the student solved another state mission out of order!
+        if not ok:
+            completed = set(state.get("completed", {}).keys())
+            for m in engine.load_missions():
+                if m["id"] != target_mission["id"] and m.get("kind") == "state" and m["id"] not in completed:
+                    alt_ok, alt_msg, alt_mission = engine.run_checker(m["id"])
+                    if alt_ok:
+                        ok, msg, mission = alt_ok, alt_msg, alt_mission
+                        break
 
-    ok, msg, mission = engine.run_checker(target_mission["id"])
     if ok:
         flag = engine.get_flag(mission["id"], state)
         if msg.startswith("[+]"):

@@ -8,6 +8,6 @@
   "bonus": false,
   "bug_hunting": false,
   "intro": "In Linux, commands often accept options (also called flags) that modify how a program behaves. They are typed after the command name and usually start with a single dash for short names (like -v) or a double dash for full words (like --version). Most command-line programs include a built-in option that prints out usage instructions and lists every flag the program supports.",
-  "story": "/challenge/run can give you the flag, but only if you ask nicely and do what it tells you to do.",
-  "description": "Check /challenge/run's documentation to find the option for asking nicely.\nRun the program with that option and follow the instructions it gives you."
+  "story": "/challenge/run can give you the flag, but only if you run it from a directory inside your home folder, ask nicely, and do what it tells you to do.",
+  "description": "1. Check /challenge/run's documentation to find the option for asking nicely.\n\n2. Create a directory in your home directory.\n\n3. Run the program inside this directory with that option and follow the instructions it gives you."
 }

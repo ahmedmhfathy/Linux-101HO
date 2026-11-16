@@ -8,5 +8,5 @@
   "bonus": false,
   "bug_hunting": false,
   "story": "Welcome to the Cyberus Linux Quest lab! Let's learn how to submit your first flag.",
-  "description": "Submit the warm-up flag CYBERUS{hello_linux_world} using quest submit."
+  "description": "1. Submit the warm-up flag CYBERUS{hello_linux_world} using quest submit."
 }

@@ -374,17 +374,9 @@ class QuestEngine:
         return self.load_missions()
 
     def get_current_mission(self, state: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Return the active selected mission if valid, otherwise the first incomplete hands-on mission."""
+        """Return the first incomplete session mission in progression order."""
         unlocked = self.get_unlocked_missions(state)
-        unlocked_map = {m["id"]: m for m in unlocked}
-        active_id = state.get("active_mission")
-        if active_id and active_id in unlocked_map:
-            return unlocked_map[active_id]
-
         completed = set(state.get("completed", {}).keys())
-        for m in unlocked:
-            if not m.get("bonus", False) and not m.get("bug_hunting", False) and m["id"] not in completed:
-                return m
         for m in unlocked:
             if m["id"] not in completed:
                 return m
@@ -519,7 +511,7 @@ class QuestEngine:
             )
 
     def sync_active_environment(self, force_system_for_current: bool = True) -> None:
-        """Ensure unlocked bonuses and current active mission are set up properly."""
+        """Ensure all session missions have their system and home files initialized."""
         state = self.load_state()
         unlocked = self.get_unlocked_missions(state)
         current = self.get_current_mission(state)
@@ -532,19 +524,16 @@ class QuestEngine:
             os.chown(str(self.challenge_dir), 0, 0)
             os.chmod(str(self.challenge_dir), 0o755)
 
-        # Replay system phase for unlocked non-conflicting missions + current mission
+        # Run system phase for all missions so students have freedom to solve in any order
         for m in unlocked:
             mid = m["id"]
-            is_current = current is not None and current["id"] == mid
-            if is_current or m.get("bonus", False) or mid in ("04",):
-                self.run_setup_phase(m, state, "system")
-
-            if (is_current or m.get("bonus", False)) and mid not in initialized_home:
+            self.run_setup_phase(m, state, "system")
+            if mid not in initialized_home:
                 self.run_setup_phase(m, state, "home")
                 initialized_home.add(mid)
                 state_changed = True
 
-        # Re-run current mission's system phase last so /challenge/* matches the active mission
+        # Re-run current mission's system phase last
         if force_system_for_current and current is not None:
             self.run_setup_phase(current, state, "system")
             if current["id"] not in initialized_home:
@@ -560,15 +549,11 @@ class QuestEngine:
                 self._save_state_unlocked(latest)
 
     def activate_mission(self, mission_id: str, reset_home: bool = False) -> Dict[str, Any]:
-        """Set up a specific unlocked mission's system and (if needed) home phase."""
+        """Ensure a specific mission's system and (if needed) home files are set up without changing active mission."""
         state = self.load_state()
         mission = self.get_mission(mission_id)
         if mission is None:
             raise QuestError(f"Unknown mission '{mission_id}'. Run `quest list` to see missions.")
-
-        unlocked_ids = {m["id"] for m in self.get_unlocked_missions(state)}
-        if mission["id"] not in unlocked_ids:
-            raise QuestError(f"Mission {mission['id']} is still locked. Complete earlier missions first!")
 
         if reset_home and mission["id"] == "04":
             with FileLock(self.lock_file):
@@ -584,7 +569,7 @@ class QuestEngine:
             initialized_home.add(mission["id"])
         with FileLock(self.lock_file):
             latest = self._load_state_unlocked()
-            latest["active_mission"] = mission["id"]
+            latest.pop("active_mission", None)
             latest["initialized_home"] = sorted(
                 set(latest.get("initialized_home", [])) | initialized_home
             )
