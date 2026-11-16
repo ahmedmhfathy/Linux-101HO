@@ -66,7 +66,7 @@ docker run --rm --network none linux-quest:1.0 /opt/quest/tests/run_all.sh
 chmod +x start.sh ; ./start.sh
 ```
 
-> 🎥 **[Setup Walkthrough](assets/setup-demo.mp4)**
+> 🎥 **[Setup Walkthrough](https://drive.google.com/file/d/1ad6Zwo1yqg8rPoZeE4z26rXRzkU5NFxZ/view?usp=drive_link)**
 
 ---
 
