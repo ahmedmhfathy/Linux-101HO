@@ -38,26 +38,44 @@ killswitch                   # Wipe all progress and restart from 0
 
 ## Quick Start
 
-### Setup Walkthrough Video
-
-<video src="assets/setup-demo.mp4" controls width="100%"></video>
-
-> 🎥 **[Watch / View Setup Walkthrough (`assets/setup-demo.mp4`)](assets/setup-demo.mp4)**
-
+### 1. Get the lab
 ```bash
-# install
 git clone https://github.com/ahmedmhfathy/Linux-101HO.git
 cd Linux-101HO
+```
 
-# Docker setup (if Docker is not installed yet)
+### 2. Install Docker (only if it is not installed yet)
+> **Note:** `setup-docker.sh` works on **Debian-based distributions only** (Kali, Debian, Ubuntu, and similar). On any other distribution, install Docker yourself by following the official guide at <https://docs.docker.com/engine/install/>, then continue from step 3.
+
+```bash
 chmod +x setup-docker.sh ; ./setup-docker.sh
+```
 
-# Build the runtime image
+### 3. Build the lab image
+```bash
 docker build --target runtime -t linux-quest:1.0 .
+```
 
-# Run the automated end-to-end test harness
+### 4. (Optional) Run the automated test harness
+```bash
 docker run --rm --network none linux-quest:1.0 /opt/quest/tests/run_all.sh
+```
 
-# Launch the interactive student lab
+### 5. Launch the lab
+```bash
 chmod +x start.sh ; ./start.sh
 ```
+
+> 🎥 **[Setup Walkthrough](assets/setup-demo.mp4)**
+
+---
+
+## Running It Again Later
+
+After the first setup, you don't need to install or build anything again. Just run:
+
+```bash
+./start.sh
+```
+
+Your progress is saved, and the lab works offline once the image is built.
