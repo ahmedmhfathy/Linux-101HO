@@ -161,21 +161,13 @@ def cmd_status(engine: QuestEngine) -> int:
     state = engine.load_state()
     missions = engine.load_missions()
     completed = state.get("completed", {})
-    handson_missions = [
-        m for m in missions if not m.get("bonus", False) and not m.get("bug_hunting", False)
-    ]
-    home_missions = [
-        m for m in missions if m.get("bonus", False) or m.get("bug_hunting", False)
-    ]
-    handson_done = sum(1 for m in handson_missions if m["id"] in completed)
-    home_done = sum(1 for m in home_missions if m["id"] in completed)
+    done_count = sum(1 for m in missions if m["id"] in completed)
     hints_total = sum(int(v) for v in state.get("hints_used", {}).values())
 
     print_banner()
     print(f"  {BOLD}Student ID     :{RESET} {state['student_id']}")
     print(f"  {BOLD}Lab Version    :{RESET} {state.get('version', ENGINE_VERSION)}")
-    print(f"  {BOLD}Hands-On Quests:{RESET} {handson_done}/{len(handson_missions)} completed")
-    print(f"  {BOLD}Home Tasks     :{RESET} {home_done}/{len(home_missions)} completed")
+    print(f"  {BOLD}Quests Done    :{RESET} {done_count}/{len(missions)} completed")
     print(f"  {BOLD}Hints Used     :{RESET} {hints_total}")
 
     current = engine.get_current_mission(state)

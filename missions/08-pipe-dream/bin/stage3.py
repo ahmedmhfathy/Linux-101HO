@@ -18,8 +18,7 @@ def _is_pipe(fd: int) -> bool:
 def run(ctx: Dict[str, Any]) -> int:
     if os.isatty(0) or not _is_pipe(0):
         print(
-            "[-] /challenge/stage3: My input must arrive through a pipe (`|`) from `/challenge/stage2`!\n"
-            "    Try: /challenge/stage1 | /challenge/stage2 | /challenge/stage3",
+            "[-] /challenge/stage3: Input must arrive directly from /challenge/stage2 on standard input!",
             file=sys.stderr,
         )
         return 1
@@ -28,8 +27,7 @@ def run(ctx: Dict[str, Any]) -> int:
     data = sys.stdin.read().strip()
     if data != expected_in:
         print(
-            "[-] /challenge/stage3: Input was not transformed by stage1 -> stage2!\n"
-            "    Run: /challenge/stage1 | /challenge/stage2 | /challenge/stage3",
+            "[-] /challenge/stage3: Input was not transformed by stage1 and stage2!",
             file=sys.stderr,
         )
         return 1
@@ -37,5 +35,5 @@ def run(ctx: Dict[str, Any]) -> int:
     passphrase = f"CYBERUS-PIPE-PASSPHRASE-{deterministic_token(ctx['student_id'], 'm08_pass', 10).upper()}"
     print("[+] Assembly line complete!")
     print(f"[+] Secret Passphrase: {passphrase}")
-    print("    Now feed that passphrase into /challenge/interrogator using `|` or `<`!")
+    print("    Now pass that passphrase into /challenge/checker's standard input!")
     return 0

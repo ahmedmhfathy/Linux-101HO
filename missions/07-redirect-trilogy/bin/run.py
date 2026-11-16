@@ -23,11 +23,7 @@ def run(ctx: Dict[str, Any]) -> int:
     if not stdout_target.startswith(home_dir + "/"):
         print(
             "[-] /challenge/run: stdout (stream 1) is currently pointing to your terminal (or outside ~).\n"
-            "    Redirect stdout to a file in your home directory using `>` or `>>`!\n"
-            "    Examples:\n"
-            "      Stage 1: /challenge/run > ~/myflag\n"
-            "      Stage 2: /challenge/run --part1 > ~/twopart.txt\n"
-            "               /challenge/run --part2 >> ~/twopart.txt",
+            "    Redirect stdout to a file in your home directory!",
             file=sys.stderr,
         )
         return 1
@@ -42,12 +38,12 @@ def run(ctx: Dict[str, Any]) -> int:
         return 0
 
     if args[0] == "--part1":
-        print("[stderr] Wrote Part 1 to file. Now append Part 2 using `>>`!", file=sys.stderr)
+        print("[stderr] Wrote Part 1 to file.", file=sys.stderr)
         print(f"HALF1:{p1_tok}")
         return 0
 
     if args[0] == "--part2":
-        print("[stderr] Wrote Part 2! Make sure you used `>>` so Part 1 was not erased.", file=sys.stderr)
+        print("[stderr] Wrote Part 2!", file=sys.stderr)
         print(f"HALF2:{p2_tok}")
         return 0
 

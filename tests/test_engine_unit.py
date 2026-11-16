@@ -2,8 +2,6 @@
 """Unit and integration tests for Cyberus Linux Quest Engine and Checkers."""
 
 import importlib.util
-import json
-import os
 import sys
 import tempfile
 import unittest
@@ -62,45 +60,29 @@ class TestQuestEngineAndMissions(unittest.TestCase):
         self.assertTrue(verify_flag(flag_01, flag_01))
         self.assertFalse(verify_flag(flag_01, "CYBERUS{01_000000000000}"))
 
-    def test_all_13_missions_loaded_in_order(self) -> None:
+    def test_all_session_missions_loaded_in_order(self) -> None:
         missions = self.engine.load_missions()
         ids = [m["id"] for m in missions]
-        expected_ids = ["00", "01", "02", "03", "B1", "04", "05", "06", "B2", "07", "08", "09", "B3"]
+        expected_ids = ["00", "01", "02", "04", "05", "07", "08"]
         self.assertEqual(ids, expected_ids)
 
-        # Verify each part has an explicit bug_hunting mission using only taught commands
-        bh_missions = [m for m in missions if m.get("bug_hunting")]
-        self.assertEqual([m["id"] for m in bh_missions], ["03", "06", "09"])
-
-    def test_linear_and_bonus_unlock_progression(self) -> None:
+    def test_linear_unlock_progression(self) -> None:
         state = self.engine.ensure_initialized()
         unlocked = [m["id"] for m in self.engine.get_unlocked_missions(state)]
         self.assertEqual(unlocked, ["00"])
 
-        # Submit 00 -> unlocks 01 (Home tasks 03 and B1 stay locked until unlock-homework)
         state["completed"]["00"] = "2026-11-14T00:00:00Z"
         self.engine.save_state(state)
         unlocked = [m["id"] for m in self.engine.get_unlocked_missions(state)]
         self.assertIn("01", unlocked)
-        self.assertNotIn("B1", unlocked)
         self.assertNotIn("02", unlocked)
 
-        # Complete Part 1 hands-on missions (01, 02) -> unlocks Part 2 (04) without needing 03 or B1
         for mid in ("01", "02"):
             state["completed"][mid] = "2026-11-14T00:00:00Z"
         self.engine.save_state(state)
         unlocked = [m["id"] for m in self.engine.get_unlocked_missions(state)]
         self.assertIn("04", unlocked)
         self.assertEqual(self.engine.get_current_mission(state)["id"], "04")
-
-        # Unlock homework -> 03, B1, 06, B2 become unlocked
-        state["homework_unlocked"] = True
-        self.engine.save_state(state)
-        unlocked = [m["id"] for m in self.engine.get_unlocked_missions(state)]
-        self.assertIn("03", unlocked)
-        self.assertIn("B1", unlocked)
-        self.assertIn("06", unlocked)
-        self.assertIn("B2", unlocked)
 
     def test_check_context_refuses_external_paths_and_symlinks(self) -> None:
         outside_file = self.base / "secret_outside.txt"
@@ -119,7 +101,7 @@ class TestQuestEngineAndMissions(unittest.TestCase):
         with self.assertRaises(FileNotFoundError):
             ctx.read("../secret_outside.txt")
 
-    def test_mission_02_03_04_06_07_09_B3_checkers(self) -> None:
+    def test_mission_02_04_07_checkers(self) -> None:
         student_id = "unit-test-student"
         missions_dir = PROJECT_ROOT / "missions"
 
@@ -136,23 +118,6 @@ class TestQuestEngineAndMissions(unittest.TestCase):
         )
         ok, _ = check_02(ctx02)
         self.assertTrue(ok)
-
-        # Mission 03 (Part 1 Bug Hunting) checker
-        check_03 = load_checker(missions_dir / "03-bughunt-recon-dotfile")
-        ctx03 = CheckContext(self.home_dir, 1000, 1000, student_id, "CYBERUS{03_test}", "03")
-        (self.home_dir / "webapp_recon").mkdir(parents=True, exist_ok=True)
-        (self.home_dir / "webapp_recon" / "config.ini").write_text("DEBUG=true\n", encoding="utf-8")
-        self.assertFalse(check_03(ctx03)[0])
-
-        endp_tok = deterministic_token(student_id, "m03_endpoint", 10)
-        stg_tok = deterministic_token(student_id, "m03_staging", 10).upper()
-        (self.home_dir / "webapp_recon" / "config.ini").write_text("DEBUG=false\n", encoding="utf-8")
-        (self.home_dir / "bounty_report").mkdir(parents=True, exist_ok=True)
-        (self.home_dir / "bounty_report" / "finding.txt").write_text(
-            f"INTERNAL_ENDPOINT=/api/v2/debug-console-{endp_tok}\nSTAGING_TOKEN=STG-{stg_tok}\n",
-            encoding="utf-8",
-        )
-        self.assertTrue(check_03(ctx03)[0])
 
         # Mission 04 checker (case-insensitive evidence dir + any filename for top researcher)
         check_04 = load_checker(missions_dir / "04-evidence-room")
@@ -178,22 +143,6 @@ class TestQuestEngineAndMissions(unittest.TestCase):
         (self.home_dir / "twopart.txt").write_text(p1 + "\n" + p2 + "\n", encoding="utf-8")
         (self.home_dir / "stderr_flag.txt").write_text(s3 + "\n", encoding="utf-8")
         self.assertTrue(check_07(ctx07)[0])
-
-        # Mission 09 (Part 3 Bug Hunting) checker
-        check_09 = load_checker(missions_dir / "09-bughunt-fuzzing-pipeline")
-        ctx09 = CheckContext(self.home_dir, 1000, 1000, student_id, "CYBERUS{09_test}", "09")
-        tok09 = deterministic_token(student_id, "m09_fuzz", 6)
-        (self.home_dir / "recon").mkdir(parents=True, exist_ok=True)
-        (self.home_dir / "recon" / "live_endpoints.txt").write_text(
-            f"[200 OK] /api/v0/internal/health-{tok09}\n"
-            f"[200 OK] /api/v1/debug/vars-{tok09}\n"
-            f"[200 OK] /api/v2/auth/login-{tok09}\n",
-            encoding="utf-8",
-        )
-        (self.home_dir / "recon" / "db_error.log").write_text(
-            "Leaked: CYBERUS{09_test}\n", encoding="utf-8"
-        )
-        self.assertTrue(check_09(ctx09)[0])
 
     def test_export_token_format(self) -> None:
         state = self.engine.ensure_initialized()

@@ -18,8 +18,7 @@ def _is_pipe(fd: int) -> bool:
 def run(ctx: Dict[str, Any]) -> int:
     if not _is_pipe(1):
         print(
-            "[-] /challenge/stage1: My stdout must be piped (`|`) directly into `/challenge/stage2`!\n"
-            "    Try: /challenge/stage1 | /challenge/stage2 | /challenge/stage3",
+            "[-] /challenge/stage1: Output must be sent directly into /challenge/stage2!",
             file=sys.stderr,
         )
         return 1

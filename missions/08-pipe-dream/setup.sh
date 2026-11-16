@@ -7,8 +7,9 @@ RUNAS_BIN="${QUEST_RUNAS_BIN:-/usr/local/lib/quest/runas}"
 
 if [[ "$PHASE" == "system" ]]; then
     mkdir -p "$CHALLENGE_DIR"
+    rm -f "$CHALLENGE_DIR/interrogator" "$CHALLENGE_DIR/.mission_interrogator"
     if [[ -f "$RUNAS_BIN" ]]; then
-        for prog in stage1 stage2 stage3 interrogator; do
+        for prog in stage1 stage2 stage3 checker; do
             cp -f "$RUNAS_BIN" "$CHALLENGE_DIR/$prog"
             chown root:root "$CHALLENGE_DIR/$prog"
             chmod 4755 "$CHALLENGE_DIR/$prog"

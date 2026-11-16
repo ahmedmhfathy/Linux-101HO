@@ -25,8 +25,7 @@ def run(ctx: Dict[str, Any]) -> int:
 
     if not stderr_target.startswith(home_dir + "/"):
         print(
-            "[-] /challenge/run2: stderr (stream 2) is not redirected to a file in your home directory!\n"
-            "    Use `2> ~/stderr_flag.txt` to capture stderr, and `> /dev/null` to discard stdout.",
+            "[-] /challenge/run2: stderr (stream 2) is not redirected to a file in your home directory!",
             file=sys.stderr,
         )
         return 1

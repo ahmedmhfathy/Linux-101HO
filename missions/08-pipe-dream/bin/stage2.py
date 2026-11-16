@@ -18,17 +18,14 @@ def _is_pipe(fd: int) -> bool:
 def run(ctx: Dict[str, Any]) -> int:
     if os.isatty(0) or not _is_pipe(0):
         print(
-            "[-] /challenge/stage2: Waiting for input from a pipe on stdin!\n"
-            "    Do not run stage2 alone. Pipe stage1 into stage2 and stage2 into stage3:\n"
-            "    /challenge/stage1 | /challenge/stage2 | /challenge/stage3",
+            "[-] /challenge/stage2: Waiting for input from /challenge/stage1 on standard input!",
             file=sys.stderr,
         )
         return 1
 
     if not _is_pipe(1):
         print(
-            "[-] /challenge/stage2: My stdout must be piped (`|`) into `/challenge/stage3`!\n"
-            "    Try: /challenge/stage1 | /challenge/stage2 | /challenge/stage3",
+            "[-] /challenge/stage2: Output must be sent directly into /challenge/stage3!",
             file=sys.stderr,
         )
         return 1
@@ -36,7 +33,10 @@ def run(ctx: Dict[str, Any]) -> int:
     expected_in = f"STAGE1_PAYLOAD:{deterministic_token(ctx['student_id'], 'm08_stage1', 10).upper()}"
     data = sys.stdin.read().strip()
     if data != expected_in:
-        print("[-] /challenge/stage2: Invalid input payload. Did it come from `/challenge/stage1`?", file=sys.stderr)
+        print(
+            "[-] /challenge/stage2: Invalid input payload. Did it come from /challenge/stage1?",
+            file=sys.stderr,
+        )
         return 1
 
     tok2 = deterministic_token(ctx["student_id"], "m08_stage2", 10).upper()

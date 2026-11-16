@@ -8,7 +8,7 @@
   "bonus": false,
   "bug_hunting": false,
   "story": "Two locked doors stand between you and a vault. Each one is jammed by its file permissions. Fix them one by one.",
-  "description": "Door 1: ~/doors/door1.txt has a passcode, but you can’t read it. Make it readable.\n\nDoor 2: ~/doors/door2.key is too open. Change its permissions so they read exactly rw-r-----.\n\nThe Lock: ~/doors/unlock.sh won’t run. Make it runnable, then run it.\n\nThe Vault: /opt/vault/flag.txt belongs to root—you need superuser powers to read what's inside it.",
+  "description": "Door 1: ~/doors/door1.txt has a passcode, but you can’t read it. Make it readable.\n\nDoor 2: ~/doors/door2.key is too open. Change its permissions so they read exactly rw-r-----.\n\nThe Lock: ~/doors/unlock.sh won’t run. Make it runnable, then run it.\n\nThe Vault: /opt/vault/flag.txt belongs to root—you need super powers to read the flag inside it.",
   "hints": [
     "Check the current permissions inside `~/doors/` and make `~/doors/door1.txt` readable so you can view its PASSCODE.",
     "Set `~/doors/door2.key` permissions to octal `640` (`rw-r-----`), then make `~/doors/unlock.sh` executable and run it.",
