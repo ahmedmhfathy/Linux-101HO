@@ -12,3 +12,6 @@ start.sh
 reset.sh
 build-release.sh
 docker-compose.yml
+README.md
+assets
+*.mp4

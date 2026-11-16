@@ -38,6 +38,12 @@ killswitch                   # Wipe all progress and restart from 0
 
 ## Quick Start
 
+### Setup Walkthrough Video
+
+<video src="assets/setup-demo.mp4" controls width="100%"></video>
+
+> 🎥 **[Watch / View Setup Walkthrough (`assets/setup-demo.mp4`)](assets/setup-demo.mp4)**
+
 ```bash
 # First-time setup (if Docker is not installed yet)
 ./setup-docker.sh
