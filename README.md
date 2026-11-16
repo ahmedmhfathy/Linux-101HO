@@ -38,31 +38,23 @@ killswitch                   # Wipe all progress and restart from 0
 
 ## Quick Start
 
-### 1. Get the lab
+> **Note:** `setup-docker.sh` works on **Debian-based distributions only** (Kali, Debian, Ubuntu, and similar). On any other distribution, install Docker yourself by following the official guide at <https://docs.docker.com/engine/install/>, then continue from the `docker build` step.
+
 ```bash
+# install
 git clone https://github.com/ahmedmhfathy/Linux-101HO.git
 cd Linux-101HO
-```
 
-### 2. Install Docker (only if it is not installed yet)
-> **Note:** `setup-docker.sh` works on **Debian-based distributions only** (Kali, Debian, Ubuntu, and similar). On any other distribution, install Docker yourself by following the official guide at <https://docs.docker.com/engine/install/>, then continue from step 3.
-
-```bash
+# Docker setup (if Docker is not installed yet)
 chmod +x setup-docker.sh ; ./setup-docker.sh
-```
 
-### 3. Build the lab image
-```bash
+# Build the runtime image
 docker build --target runtime -t linux-quest:1.0 .
-```
 
-### 4. (Optional) Run the automated test harness
-```bash
+# Run the automated end-to-end test harness
 docker run --rm --network none linux-quest:1.0 /opt/quest/tests/run_all.sh
-```
 
-### 5. Launch the lab
-```bash
+# Launch the interactive student lab
 chmod +x start.sh ; ./start.sh
 ```
 
