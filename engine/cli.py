@@ -5,6 +5,7 @@ import os
 import shutil
 import stat
 import sys
+import textwrap
 from pathlib import Path
 from typing import List, Optional
 
@@ -35,14 +36,28 @@ RESET = "\033[0m"
 
 
 def format_mission_text(text: str, student_id: str) -> str:
-    """Substitute dynamic per-student placeholders in mission descriptions."""
+    """Substitute dynamic per-student placeholders and wrap lines cleanly on word boundaries."""
     dirs_01 = ["/var/log"]
     req_dir_01 = deterministic_choice(student_id, "mission01_dir", dirs_01)
     phrase_02 = f"CYBERUS-NOTE-{deterministic_token(student_id, 'mission02_phrase', 8).upper()}"
-    return (
+    rendered = (
         text.replace("{MISSION01_DIR}", req_dir_01)
         .replace("{MISSION02_PHRASE}", phrase_02)
     )
+    wrapped_lines: List[str] = []
+    for line in rendered.splitlines():
+        if not line.strip():
+            wrapped_lines.append("")
+        else:
+            wrapped_lines.append(
+                textwrap.fill(
+                    line,
+                    width=76,
+                    break_long_words=False,
+                    break_on_hyphens=False,
+                )
+            )
+    return "\n".join(wrapped_lines)
 
 
 def print_banner() -> None:

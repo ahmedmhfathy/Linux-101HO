@@ -229,9 +229,15 @@ fi
 echo -e "\n${CYAN}============================================================${RESET}"
 echo -e "${CYAN}   TEST SUMMARY (${PASS_COUNT} PASSED, ${FAIL_COUNT} FAILED)${RESET}"
 echo -e "${CYAN}============================================================${RESET}"
-for line in "${RESULTS[@]}"; do
-    echo "  $line"
-done
+if [[ "$FAIL_COUNT" -eq 0 ]]; then
+    echo -e "  ${GREEN}[+] All tests passed with 0 failures!${RESET}"
+else
+    for line in "${RESULTS[@]}"; do
+        if [[ "$line" == FAIL* ]]; then
+            echo -e "  ${RED}${line}${RESET}"
+        fi
+    done
+fi
 
 if [[ "$FAIL_COUNT" -gt 0 ]]; then
     exit 1

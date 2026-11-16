@@ -64,6 +64,44 @@ fi
 
 touch "$HOME_DIR/.bashrc"
 
+# Install Cyberus welcome banner script
+cat << 'BANNER_EOF' > /usr/local/bin/cyberus-banner
+#!/usr/bin/env bash
+
+[ -t 1 ] || exit 0
+
+G=$(printf '\033[1;33m')
+W=$(printf '\033[1;37m')
+D=$(printf '\033[0;90m')
+C=$(printf '\033[0;36m')
+R=$(printf '\033[0m')
+COL=$(printf '\033[63G')
+
+sed "s|{G}|$G|g; s|{W}|$W|g; s|{D}|$D|g; s|{C}|$C|g; s|{R}|$R|g; s|{COL}|$COL|g" << 'EOF'
+{G}          .-----------.___
+{G}        .'                '-._
+{G}       /       .-------.      '-.
+{G}      /      .'         `-.   <o )
+{G}     |      /     {W}__   __  ____   _____  {G}____   {W}_   _   ____
+{G}     |     |      {W}\ \ / / | __ ) | ____| {G}|  _ \ {W}| | | | / ___|
+{G}     |     |       {W}\ V /  |  _ \ |  _|   {G}| |_) |{W}| | | | \___ \
+{G}     |      \       {W}| |   | |_) || |___  {G}|  _ < {W}| |_| |  ___) |
+{G}      \      '.     {W}|_|   |____/ |_____| {G}|_| \_\{W} \___/  |____/
+{G}       '.      '-._______________________..---''
+{G}         '-._______________________..--''{R}
+
+{D}  ╭───────────────────────────────────────────────────────────╮{R}
+{D}  │{R}  {G}🐧 LINUX 101{R}            {D}│{R}   {W}SeeCurity Encapsulated{R} 🐍{COL}{D}│{R}
+{D}  ├───────────────────────────────────────────────────────────┤{R}
+{D}  │{R}  {C}❯{R} {W}quest{R}        {D}:::{R} View active mission briefing{COL}{D}│{R}
+{D}  │{R}  {C}❯{R} {W}quest list{R}   {D}:::{R} Browse all available challenges{COL}{D}│{R}
+{D}  │{R}  {C}❯{R} {W}quest hint{R}   {D}:::{R} Request tactical intel on stuck step{COL}{D}│{R}
+{D}  ╰───────────────────────────────────────────────────────────╯{R}
+EOF
+BANNER_EOF
+chown root:root /usr/local/bin/cyberus-banner
+chmod 0755 /usr/local/bin/cyberus-banner
+
 # Ensure .bashrc has the latest Cyberus Linux Quest block (including history-clearing wrappers)
 if grep -q "# >>> CYBERUS-LINUX-QUEST >>>" "$HOME_DIR/.bashrc" 2>/dev/null; then
     sed -i '/# >>> CYBERUS-LINUX-QUEST >>>/,/# <<< CYBERUS-LINUX-QUEST <<</d' "$HOME_DIR/.bashrc" 2>/dev/null || true
@@ -110,11 +148,7 @@ quest() {
 }
 
 if [[ $- == *i* ]]; then
-    echo -e "\033[1;36m============================================================\033[0m"
-    echo -e "\033[1;36m   Welcome to CYBERUS LINUX QUEST\033[0m"
-    echo -e "\033[0;37m   Type \033[1;33mquest\033[0;37m to view your current mission.\033[0m"
-    echo -e "\033[0;37m   Type \033[1;33mquest list\033[0;37m to see all missions, or \033[1;33mquest hint\033[0;37m for help.\033[0m"
-    echo -e "\033[1;36m============================================================\033[0m"
+    /usr/local/bin/cyberus-banner
 fi
 # <<< CYBERUS-LINUX-QUEST <<<
 EOF

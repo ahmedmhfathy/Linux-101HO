@@ -7,7 +7,7 @@
   "kind": "program",
   "bonus": false,
   "bug_hunting": false,
-  "story": "Welcome to the Cyberus Linux Quest lab! Before you start hunting for bugs and vulnerabilities, let's learn how to submit a flag.",
+  "story": "Welcome to the Cyberus Linux Quest lab! Let's learn how to submit your first flag.",
   "description": "Submit the warm-up flag `CYBERUS{hello_linux}` using `quest submit`.",
   "hints": [
     "Type `quest submit CYBERUS{hello_linux}` in your terminal.",
