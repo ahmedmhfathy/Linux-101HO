@@ -160,10 +160,18 @@ if [[ -f "$HOME_DIR/.profile" ]]; then
     chown member:bug "$HOME_DIR/.profile"
 fi
 
+# If running inside GitHub Codespaces, lock /workspaces so students cannot read raw mission solve scripts
+if [[ -d /workspaces ]]; then
+    chown root:root /workspaces 2>/dev/null || true
+    chmod 0700 /workspaces 2>/dev/null || true
+fi
+
 # Initialize quest state & replay system phase for unlocked missions
 /usr/bin/python3 -I /opt/quest/engine/cli.py --internal-init
 
-if [[ $# -eq 0 ]] || [[ "${1:-}" == "login-shell" ]]; then
+if [[ "${1:-}" == "init-only" ]]; then
+    exit 0
+elif [[ $# -eq 0 ]] || [[ "${1:-}" == "login-shell" ]]; then
     exec runuser -l member
 else
     exec "$@"

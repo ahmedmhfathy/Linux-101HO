@@ -38,6 +38,20 @@ killswitch                   # Wipe all progress and restart from 0
 
 ## Quick Start
 
+### Option 1: Run Online in Your Browser (GitHub Codespaces — No Linux or Docker Needed)
+
+If you are on Windows, macOS, or do not have Linux/Docker installed locally, you can launch the lab directly in your browser using **GitHub Codespaces**:
+
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/ahmedmhfathy/Linux-101HO?quickstart=1)
+
+1. Click the **Open in GitHub Codespaces** button above (or click **Code → Codespaces → Create codespace on main** on this repository).
+2. Wait ~1 minute for the container to build and open in your browser.
+3. Open the terminal panel (`Ctrl+\``) — you will land directly at `member@cyberus:~$` with the lab ready to play!
+
+---
+
+### Option 2: Run Locally with Docker (Kali / Debian / Ubuntu / WSL2)
+
 > **Note:** `setup-docker.sh` works on **Debian-based distributions only** (Kali, Debian, Ubuntu, and similar). On any other distribution, install Docker yourself by following the official guide at <https://docs.docker.com/engine/install/>, then continue from the `docker build` step.
 
 ```bash

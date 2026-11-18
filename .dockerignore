@@ -1,4 +1,5 @@
 .git
+.devcontainer
 .gitignore
 .gitattributes
 __pycache__

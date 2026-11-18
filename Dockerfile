@@ -90,7 +90,9 @@ RUN mkdir -p /usr/share/man/man1 /usr/local/share/man/man1 && \
     find /opt/quest/missions -type d -exec chmod 0700 {} + && \
     find /opt/quest/missions -type f -exec chmod 0600 {} + && \
     find /opt/quest/missions -name "*.sh" -exec chmod 0700 {} + && \
-    chmod 0700 /opt/quest/tests/run_all.sh
+    chmod 0700 /opt/quest/tests/run_all.sh && \
+    /opt/quest/entrypoint.sh init-only && \
+    rm -rf /var/lib/quest/*
 
 WORKDIR /home/member
 ENTRYPOINT ["/opt/quest/entrypoint.sh"]

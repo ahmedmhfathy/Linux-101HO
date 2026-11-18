@@ -1,0 +1,31 @@
+{
+  "name": "Cyberus Linux Quest (Linux 101 Lab)",
+  "build": {
+    "dockerfile": "../Dockerfile",
+    "context": "..",
+    "target": "runtime"
+  },
+  "runArgs": [
+    "--hostname=cyberus"
+  ],
+  "workspaceFolder": "/home/member",
+  "remoteUser": "member",
+  "overrideCommand": true,
+  "onCreateCommand": "/usr/local/bin/quest --internal-codespace-init",
+  "postStartCommand": "/usr/local/bin/quest --internal-codespace-init",
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "terminal.integrated.profiles.linux": {
+          "bash": {
+            "path": "/bin/bash",
+            "args": ["-l"]
+          }
+        },
+        "terminal.integrated.cwd": "/home/member",
+        "workbench.startupEditor": "none"
+      }
+    }
+  }
+}

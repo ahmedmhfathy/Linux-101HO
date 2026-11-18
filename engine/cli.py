@@ -552,6 +552,10 @@ def main(argv: Optional[List[str]] = None) -> int:
             engine.ensure_initialized()
             engine.sync_active_environment(force_system_for_current=True)
             return 0
+        if sub == "--internal-codespace-init":
+            import subprocess
+            subprocess.run(["/bin/bash", "/opt/quest/entrypoint.sh", "init-only"], check=False)
+            return 0
         if sub == "--internal-unseal-vault":
             return cmd_internal_unseal_vault(engine, rest)
         if sub == "--internal-check-vault":
