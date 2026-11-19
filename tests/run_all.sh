@@ -93,6 +93,13 @@ test_mission_entry() {
         else
             record_fail "Mission 06: /challenge/checker CLI arg rejection" "unexpected: $ARG_OUT"
         fi
+    elif [[ "$MID" == "07" ]]; then
+        if run_as_student "MANPAGER=cat man gta6_patcher | grep -q -- '--burn-disc'" && \
+           run_as_student "MANPAGER=cat man /challenge/gta6_patcher | grep -q -- '--burn-disc'"; then
+            record_pass "Mission 07: man gta6_patcher renders --burn-disc option"
+        else
+            record_fail "Mission 07: man gta6_patcher check" "did not render --burn-disc"
+        fi
     fi
 
     if [[ "$MKIND" == "state" ]]; then
@@ -171,7 +178,7 @@ else
     record_pass "SEC-3: /opt/quest/engine unreadable by student"
 fi
 
-# 3. Session Missions Progression (00 -> 01 -> 02 -> 03 -> 04 -> 05 -> 06)
+# 3. Session Missions Progression (00 -> 01 -> 02 -> 03 -> 04 -> 05 -> 06 -> 07 Bonus)
 HANDSON_MISSIONS=(
     "00:00-hello-linux:program"
     "01:01-position-thyself:program"
@@ -180,6 +187,7 @@ HANDSON_MISSIONS=(
     "04:04-locked-doors:program"
     "05:05-redirect-trilogy:state"
     "06:06-pipe-dream:program"
+    "07:07-gta6-rebellion:program"
 )
 
 for entry in "${HANDSON_MISSIONS[@]}"; do
@@ -212,8 +220,8 @@ fi
 # 7. Machine Reset Killswitch Verification (deletes user folders & restores files WITHOUT losing progress)
 run_as_student "mkdir -p ~/my_custom_test_dir && touch ~/my_custom_test_dir/junk.txt"
 run_as_student "reset-machine" >/dev/null
-if run_as_student "test ! -d ~/my_custom_test_dir" && run_as_student "quest status" | grep -q "7/7 Completed"; then
-    record_pass "RESET-MACHINE: reset-machine deletes user folders and restores files while keeping 7/7 progress"
+if run_as_student "test ! -d ~/my_custom_test_dir" && run_as_student "quest status" | grep -q "BONUS SOLVED"; then
+    record_pass "RESET-MACHINE: reset-machine deletes user folders and restores files while keeping progress + BONUS SOLVED"
 else
     record_fail "RESET-MACHINE: reset-machine verification" "either custom dir remained or progress was lost"
 fi

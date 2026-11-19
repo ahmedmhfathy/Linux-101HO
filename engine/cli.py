@@ -31,6 +31,7 @@ CYAN_NORMAL = "\033[0;36m"
 GREEN = "\033[1;32m"
 YELLOW = "\033[1;33m"
 RED = "\033[1;31m"
+MAGENTA = "\033[1;35m"
 WHITE = "\033[1;37m"
 GRAY = "\033[0;90m"
 BOLD = "\033[1m"
@@ -43,16 +44,23 @@ RIGHT_BORDER_COL = 3 + BOX_INNER_WIDTH + 1  # Column 69
 HIGHLIGHT_PATTERNS = re.compile(
     r"(`[^`]+`"
     r"|CYBERUS\{[^}]+\}"
+    r"|a3da2_sherket_nvidia_microntech_sony_rockstar"
     r"|a3da2_sherket_nvidia_microntech"
     r"|rw-r-----"
-    r"|(?<![A-Za-z0-9_])(?:~/[A-Za-z0-9_./-]*|/[A-Za-z0-9_./-]+|\.evd|\.code\.txt|quest check|quest submit|quest list|quest status|reset-machine|killswitch)(?![A-Za-z0-9_]))"
+    r"|(?<![A-Za-z0-9_])(?:~/[A-Za-z0-9_./-]*|/[A-Za-z0-9_./-]+|\.evd|\.tofo|\.code\.txt|quest check|quest submit|quest list|quest status|reset-machine|killswitch)(?![A-Za-z0-9_]))"
 )
 
 
-def print_header_box(left_title: str, right_plain: str = "", right_colored: str = "") -> None:
+def print_header_box(
+    left_title: str,
+    right_plain: str = "",
+    right_colored: str = "",
+    border_color: str = GRAY,
+    title_color: str = WHITE,
+) -> None:
     """Render the rounded top header box matching the Cyberus Linux 101 UI."""
-    top = f"{GRAY}  ╭{'─' * BOX_INNER_WIDTH}╮{RESET}"
-    bot = f"{GRAY}  ╰{'─' * BOX_INNER_WIDTH}╯{RESET}"
+    top = f"{border_color}  ╭{'─' * BOX_INNER_WIDTH}╮{RESET}"
+    bot = f"{border_color}  ╰{'─' * BOX_INNER_WIDTH}╯{RESET}"
     col_end = f"\033[{RIGHT_BORDER_COL}G"
     if right_plain:
         right_col_pos = max(30, RIGHT_BORDER_COL - 2 - len(right_plain))
@@ -60,8 +68,8 @@ def print_header_box(left_title: str, right_plain: str = "", right_colored: str 
     else:
         right_part = ""
     mid = (
-        f"{GRAY}  │{RESET}  {YELLOW}🐧 LINUX 101{RESET}  {GRAY}│{RESET}  "
-        f"{WHITE}{left_title}{RESET}{right_part}{col_end}{GRAY}│{RESET}"
+        f"{border_color}  │{RESET}  {YELLOW}🐧 LINUX 101{RESET}  {border_color}│{RESET}  "
+        f"{title_color}{left_title}{RESET}{right_part}{col_end}{border_color}│{RESET}"
     )
     print(top)
     print(mid)
@@ -173,8 +181,9 @@ def cmd_list(engine: QuestEngine) -> int:
     current = engine.get_current_mission(state)
     current_id = current["id"] if current else None
 
-    done_count = sum(1 for m in missions if m["id"] in completed)
-    total_count = len(missions)
+    core_missions = [m for m in missions if not m.get("bonus", False)]
+    done_count = sum(1 for m in core_missions if m["id"] in completed)
+    total_count = len(core_missions)
     right_plain = f"{done_count}/{total_count} Completed"
     right_colored = f"{WHITE}{right_plain}{RESET}"
 
@@ -186,7 +195,12 @@ def cmd_list(engine: QuestEngine) -> int:
         part = int(m.get("part", 0))
         if part != current_part:
             current_part = part
-            part_title = "Warm-Up" if part == 0 else f"Part {part}"
+            if part == 0:
+                part_title = "Warm-Up"
+            elif m.get("bonus", False):
+                part_title = "Bonus"
+            else:
+                part_title = f"Part {part}"
             print(f"\n  {BOLD}{CYAN}--- {part_title} ---{RESET}")
 
         mid = m["id"]
@@ -213,46 +227,69 @@ def cmd_status(engine: QuestEngine) -> int:
     missions = engine.load_missions()
     completed = state.get("completed", {})
 
-    done_count = sum(1 for m in missions if m["id"] in completed)
-    total_count = len(missions)
+    core_missions = [m for m in missions if not m.get("bonus", False)]
+    bonus_missions = [m for m in missions if m.get("bonus", False)]
+    bonus_solved = any(m["id"] in completed for m in bonus_missions)
+
+    done_count = sum(1 for m in core_missions if m["id"] in completed)
+    total_count = len(core_missions)
     pct = int(round((done_count / total_count) * 100)) if total_count else 0
     bar_width = 20
     filled = int(round((done_count / total_count) * bar_width)) if total_count else 0
     filled = max(0, min(bar_width, filled))
     if done_count > 0 and filled == 0:
         filled = 1
-    bar_str = f"{WHITE}{'█' * filled}{GRAY}{'░' * (bar_width - filled)}{RESET}"
 
-    right_plain = f"{done_count}/{total_count} Completed"
-    right_colored = f"{WHITE}{right_plain}{RESET}"
+    if bonus_solved:
+        border_c = MAGENTA
+        heading_c = YELLOW
+        bar_str = f"{YELLOW}{'█' * filled}{MAGENTA}{'░' * (bar_width - filled)}{RESET}"
+        right_plain = f"{done_count}/{total_count} Completed [BONUS SOLVED]"
+        right_colored = f"{YELLOW}{done_count}/{total_count} Completed {MAGENTA}[BONUS SOLVED]{RESET}"
+    else:
+        border_c = GRAY
+        heading_c = WHITE
+        bar_str = f"{WHITE}{'█' * filled}{GRAY}{'░' * (bar_width - filled)}{RESET}"
+        right_plain = f"{done_count}/{total_count} Completed"
+        right_colored = f"{WHITE}{right_plain}{RESET}"
 
     print()
-    print_header_box("Mission Status", right_plain, right_colored)
-    print(f"\n  {WHITE}PROGRESS{RESET}")
-    print(f"  [{bar_str}] {WHITE}{pct}%{RESET}  ({done_count} of {total_count} solved)\n")
+    print_header_box("Mission Status", right_plain, right_colored, border_color=border_c, title_color=heading_c)
+    print(f"\n  {heading_c}PROGRESS{RESET}")
+    if bonus_solved:
+        print(
+            f"  [{bar_str}] {YELLOW}{pct}%{RESET}  ({done_count} of {total_count} solved  {MAGENTA}★ BONUS SOLVED{RESET})\n"
+        )
+    else:
+        print(f"  [{bar_str}] {WHITE}{pct}%{RESET}  ({done_count} of {total_count} solved)\n")
 
-    print(f"  {WHITE}ACTIVE MISSION{RESET}")
-    current = engine.get_current_mission(state)
-    if current and current["id"] not in completed:
-        cat = current.get("category", "")
+    print(f"  {heading_c}ACTIVE MISSION{RESET}")
+    active_core = None
+    for m in core_missions:
+        if m["id"] not in completed:
+            active_core = m
+            break
+
+    if active_core is not None:
+        cat = active_core.get("category", "")
         cat_part = f"  ({cat})" if cat else ""
-        print(f"  {CYAN_NORMAL}❯{RESET} [{current['id']}] {WHITE}{current['title']}{RESET}{cat_part}\n")
-    elif current:
-        cat = current.get("category", "")
-        cat_part = f"  ({cat})" if cat else ""
-        print(f"  {GREEN}✔{RESET} All missions completed! (Last: [{current['id']}] {current['title']}{cat_part})\n")
+        print(f"  {CYAN_NORMAL}❯{RESET} [{active_core['id']}] {WHITE}{active_core['title']}{RESET}{cat_part}\n")
     else:
         print(f"  {GREEN}✔ All missions completed!{RESET}\n")
 
-    print(f"  {WHITE}COMPLETED MISSIONS{RESET}")
-    completed_missions = [m for m in missions if m["id"] in completed]
-    if completed_missions:
-        for m in completed_missions:
+    print(f"  {heading_c}COMPLETED MISSIONS{RESET}")
+    completed_core = [m for m in core_missions if m["id"] in completed]
+    completed_bonus = [m for m in bonus_missions if m["id"] in completed]
+
+    if completed_core or completed_bonus:
+        for m in completed_core:
             print(f"  {GREEN}✔{RESET} [{m['id']}] {m['title']}")
+        for m in completed_bonus:
+            print(f"  {YELLOW}★{RESET} {MAGENTA}[{m['id']}] {m['title']}  [BONUS SOLVED]{RESET}")
     else:
         print(f"  {GRAY}None yet — run `quest` to start Mission 00!{RESET}")
 
-    print(f"\n{GRAY}  {'─' * (BOX_INNER_WIDTH + 2)}{RESET}")
+    print(f"\n{border_c}  {'─' * (BOX_INNER_WIDTH + 2)}{RESET}")
     print(f"  {CYAN_NORMAL}❯{RESET} Resume active:    {WHITE}quest{RESET}")
     print(f"  {CYAN_NORMAL}❯{RESET} All challenges:   {WHITE}quest list{RESET}")
     print()

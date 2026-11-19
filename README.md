@@ -19,6 +19,9 @@ An interactive, Docker-based Linux hands-on lab featuring progressive command-li
 - **Mission `05` – Redirect Trilogy (`Input & Output Redirection`)**: Controlling standard output (`stdout`) and standard error (`stderr`) streams across three stages.
 - **Mission `06` – Pipe Dream (`Pipelines & Standard Input`)**: Chaining multiple programs together in an assembly line and feeding data into standard input (`stdin`).
 
+### Bonus
+- **Mission `07` – GTA VI: Physical Disc Rebellion (`Bonus`)**: Combining directory permissions, folder renaming, appending to files, searching with `find`, reading documentation, and redirecting `stderr` into `stdout` across a pipeline.
+
 ---
 
 ## Lab Commands Inside the Container

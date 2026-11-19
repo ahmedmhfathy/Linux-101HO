@@ -33,6 +33,8 @@ def _resolve_mission_id_for_call(
         return "05"
     if prog_name in ("stage1", "stage2", "stage3", "checker"):
         return "06"
+    if prog_name in ("gta6_patcher", "disc_burner"):
+        return "07"
 
     if prog_name == "run":
         home_real = os.path.realpath(str(engine.home_dir))

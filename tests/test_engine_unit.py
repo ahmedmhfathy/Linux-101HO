@@ -64,13 +64,13 @@ class TestQuestEngineAndMissions(unittest.TestCase):
     def test_all_session_missions_loaded_in_order(self) -> None:
         missions = self.engine.load_missions()
         ids = [m["id"] for m in missions]
-        expected_ids = ["00", "01", "02", "03", "04", "05", "06"]
+        expected_ids = ["00", "01", "02", "03", "04", "05", "06", "07"]
         self.assertEqual(ids, expected_ids)
 
     def test_linear_unlock_progression(self) -> None:
         state = self.engine.ensure_initialized()
         unlocked = [m["id"] for m in self.engine.get_unlocked_missions(state)]
-        self.assertEqual(unlocked, ["00", "01", "02", "03", "04", "05", "06"])
+        self.assertEqual(unlocked, ["00", "01", "02", "03", "04", "05", "06", "07"])
         self.assertEqual(self.engine.get_current_mission(state)["id"], "00")
 
         state["completed"]["00"] = "2026-11-14T00:00:00Z"

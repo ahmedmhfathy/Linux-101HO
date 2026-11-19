@@ -78,7 +78,9 @@ COPY --from=builder --chown=root:root /src/runas /usr/local/bin/quest
 RUN mkdir -p /usr/share/man/man1 /usr/local/share/man/man1 && \
     cp -f /opt/quest/missions/02-home-sweet-home/man/run.1 /usr/share/man/man1/run.1 && \
     cp -f /opt/quest/missions/02-home-sweet-home/man/run.1 /usr/local/share/man/man1/run.1 && \
-    chmod 0644 /usr/share/man/man1/run.1 /usr/local/share/man/man1/run.1 && \
+    cp -f /opt/quest/missions/07-gta6-rebellion/man/gta6_patcher.1 /usr/share/man/man1/gta6_patcher.1 && \
+    cp -f /opt/quest/missions/07-gta6-rebellion/man/gta6_patcher.1 /usr/local/share/man/man1/gta6_patcher.1 && \
+    chmod 0644 /usr/share/man/man1/run.1 /usr/local/share/man/man1/run.1 /usr/share/man/man1/gta6_patcher.1 /usr/local/share/man/man1/gta6_patcher.1 && \
     mandb -q >/dev/null 2>&1 || true && \
     chown -R root:root /opt/quest /usr/local/lib/quest /challenge /opt/vault /var/lib/quest /usr/local/bin/quest && \
     chmod -R go-w /opt/quest /usr/local/lib/quest /challenge /opt/vault /usr/local/bin && \

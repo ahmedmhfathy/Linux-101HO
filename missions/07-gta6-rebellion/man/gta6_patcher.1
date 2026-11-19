@@ -1,0 +1,26 @@
+.TH GTA6_PATCHER 1 "November 2026" "Tofa7aElSafa7a Leak" "Cyberus Linux Quest Manual"
+.SH NAME
+gta6_patcher \- strip digital-only DRM from the leaked GTA VI build and generate a physical disc stream
+.SH SYNOPSIS
+.B /challenge/gta6_patcher
+[\fIOPTIONS\fR]
+.SH DESCRIPTION
+.B /challenge/gta6_patcher
+verifies the patched GTA VI folder inside
+.I ~/gta6_leak/physical_disc_edition/
+and outputs the physical disc build stream on standard error (\fBstderr\fR).
+.SH OPTIONS
+.TP
+.BR \-v ", " \-\-verify\-drm
+Check current Rockstar digital storefront lock status.
+.TP
+.BR \-b ", " \-\-burn\-disc
+Strip digital-only DRM and emit the physical disc build stream on stderr.
+.TP
+.BR \-t ", " \-\-telemetry
+Run dummy online telemetry diagnostics.
+.TP
+.BR \-h ", " \-\-help
+Display usage information and exit.
+.SH AUTHOR
+Leaked by an old member of the Tofa7aElSafa7a group.

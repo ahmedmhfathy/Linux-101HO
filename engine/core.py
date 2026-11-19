@@ -33,6 +33,7 @@ MISSION_FLAG_PHRASES: Dict[str, str] = {
     "04": "chmod_640_and_say_please",
     "05": "signal_over_stderr_noise",
     "06": "pipeline_pro_no_keyboard",
+    "07": "gta6_physical_disc_rebellion",
 }
 
 LEET_MAP: Dict[str, str] = {
@@ -358,6 +359,7 @@ class QuestEngine:
             "04": 40,
             "05": 50,
             "06": 60,
+            "07": 70,
         }
         missions.sort(key=lambda m: (order_map.get(m["id"], 999), m["id"]))
         return missions
@@ -374,9 +376,12 @@ class QuestEngine:
         return self.load_missions()
 
     def get_current_mission(self, state: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Return the first incomplete session mission in progression order."""
+        """Return the first incomplete core session mission (or bonus if all core missions are done)."""
         unlocked = self.get_unlocked_missions(state)
         completed = set(state.get("completed", {}).keys())
+        for m in unlocked:
+            if not m.get("bonus", False) and m["id"] not in completed:
+                return m
         for m in unlocked:
             if m["id"] not in completed:
                 return m
