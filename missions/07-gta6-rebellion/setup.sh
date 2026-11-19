@@ -67,11 +67,12 @@ for d in range(20):
                 "   [Tofa7aElSafa7a Insider Leak - GTA VI Physical Disc]\n"
                 "=============================================================\n"
                 "Nice job finding the .tofo file!\n\n"
-                "To burn the physical disc and claim your flag:\n"
+                "To burn the physical disc and get your flag:\n"
                 "  1. Check /challenge/gta6_patcher's documentation (man or --help)\n"
-                "     to find the option for building the physical disc.\n"
-                "  2. /challenge/gta6_patcher prints its output on stderr (stream 2).\n"
-                "     Redirect stderr to stdout and pipe (|) it into this program:\n\n"
+                "     to know the option for building the physical disc.\n"
+                "  2. Run /challenge/gta6_patcher with that option, redirect its\n"
+                "     stderr (stream 2) to stdout (stream 1), and pipe (|) it\n"
+                "     into this program:\n\n"
                 "     /challenge/disc_burner\n"
                 "=============================================================\n",
                 encoding="utf-8",
